@@ -5,7 +5,7 @@ Every day should produce a demonstrable feature in VS Code.
 
 ---
 
-## Day 1: Entry Point + End-to-End Skeleton
+## Day 1: Entry Point + End-to-End Skeleton ✅
 
 ### Objectives
 
@@ -26,7 +26,7 @@ Every day should produce a demonstrable feature in VS Code.
   - Press F5 → Extension Development Host
   - Open any .py file → see diagnostic
   - Warning appears in Problems panel
-- [ ] GitHub Actions
+- [x] GitHub Actions
   - Run tests on push/PR
   - ESLint checks
   - TypeScript compilation
