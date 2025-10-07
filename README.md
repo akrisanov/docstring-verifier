@@ -10,6 +10,8 @@ Build a VS Code extension that detects discrepancies between docstrings and actu
 - Diagnostics + Quick Fix → auto-generates correct docstring
 - Multi-language support (Python + TypeScript) showing architecture extensibility
 
+The implementation plan can be found in [MVP.md](./MVP.md).
+
 ## Limitations
 
 - Python only supports Google and Sphinx docstring formats (not NumPy)
