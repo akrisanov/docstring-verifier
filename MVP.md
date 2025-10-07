@@ -6,7 +6,7 @@
 
 ### Objectives
 
-- [ ] Scaffold VS Code extension (TypeScript)
+- [x] Scaffold VS Code extension (TypeScript)
 - [ ] Setup project structure with parsers/analyzers/diagnostics folders
 - [ ] Implement Python AST parser (via `ast` module + child_process)
 - [ ] Extract function facts: parameters, types, return statements, raises
