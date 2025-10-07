@@ -58,7 +58,7 @@ Every day should produce a demonstrable feature in VS Code.
   - Test on real Python files
   - Update diagnostic logic to use parsed data
 
-**Current Status:** Python AST Extractor complete with tests and docs. Next: TypeScript wrapper.
+**Current Status:** Python AST Extractor complete with tests, docs, and CI/CD. Next: TypeScript wrapper.
 
 **Milestone:** Extension analyzes real Python code with docstrings
 

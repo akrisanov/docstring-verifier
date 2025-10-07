@@ -47,6 +47,49 @@ jobs:
       - name: Run TypeScript type checking
         run: pnpm run check-types
 
+  python-tests:
+    name: Python Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        working-directory: tools/python
+        run: uv sync --all-groups
+
+      - name: Run linter (ruff)
+        working-directory: tools/python
+        run: uv run ruff check .
+
+      - name: Run formatter check (ruff)
+        working-directory: tools/python
+        run: uv run ruff format --check .
+
+      - name: Run tests
+        working-directory: tools/python
+        run: uv run pytest -v --cov --cov-report=xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: success()
+        with:
+          file: tools/python/coverage.xml
+          flags: python
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
   test:
     name: Test
     runs-on: ubuntu-latest
