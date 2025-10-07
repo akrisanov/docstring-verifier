@@ -12,3 +12,11 @@ vsc-extension-quickstart.md
 **/*.map
 **/*.ts
 **/.vscode-test.*
+
+# Include Python tools
+!tools/python/*.py
+!tools/python/README.md
+!tools/python/pyproject.toml
+
+# Exclude Python tests from bundle
+tools/python/tests/

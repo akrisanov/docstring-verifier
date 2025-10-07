@@ -1,0 +1,55 @@
+[project]
+name = "docstring-verifier-tools"
+version = "0.0.1"
+description = "Python AST extractor for Docstring Verifier VS Code Extension"
+requires-python = ">=3.9"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Andrey Krisanov" }]
+dependencies = []
+
+[project.scripts]
+ast-extractor = "ast_extractor:main"
+
+# Development dependencies using uv dependency groups
+# Use: uv sync --group dev --group test --group lint
+[dependency-groups]
+dev = ["ipython>=8.18"]
+test = ["pytest>=8.0", "pytest-cov>=5.0"]
+lint = ["ruff>=0.12.0"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+src = [".", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "W"]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+
+[tool.pytest.ini_options]
+addopts = "-ra -v"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+[tool.coverage.run]
+source = ["."]
+omit = ["tests/*", "*/test_*.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
