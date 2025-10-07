@@ -1,9 +1,13 @@
 import * as vscode from 'vscode';
 import { Logger } from './utils/logger';
+import { IParser } from './parsers/base';
+import { MockPythonParser } from './parsers/python/mockParser';
+import { DiagnosticCode } from './diagnostics/types';
 
 // Global instances
 let logger: Logger;
 let diagnosticCollection: vscode.DiagnosticCollection;
+let pythonParser: IParser;
 
 /**
  * Called when the extension is activated.
@@ -17,6 +21,10 @@ export function activate(context: vscode.ExtensionContext) {
 	// Create diagnostic collection for our errors/warnings
 	diagnosticCollection = vscode.languages.createDiagnosticCollection('docstring-verifier');
 	context.subscriptions.push(diagnosticCollection);
+
+	// Initialize parsers (mock for now, will be replaced with real parser in Day 2)
+	pythonParser = new MockPythonParser();
+	logger.debug('Using MockPythonParser for testing');
 
 	// Register document change listener
 	context.subscriptions.push(
@@ -77,17 +85,52 @@ function shouldAnalyze(document: vscode.TextDocument): boolean {
 
 /**
  * Analyze a document for docstring mismatches.
- * This is a placeholder that will be implemented in later stages.
  */
-function analyzeDocument(document: vscode.TextDocument): void {
+async function analyzeDocument(document: vscode.TextDocument): Promise<void> {
 	logger.trace(`Analyzing document: ${document.fileName}`);
 
 	// Clear existing diagnostics for this document
 	diagnosticCollection.delete(document.uri);
 
-	// TODO: 1. Add mock diagnostic
-	// TODO: 2. Add real parser
-	// TODO: 3. Add real analyzers
+	try {
+		// Step 1: Parse the document
+		const functions = await pythonParser.parse(document);
+		logger.debug(`Found ${functions.length} functions in ${document.fileName}`);
+
+		if (functions.length === 0) {
+			return;
+		}
+
+		// Step 2: Create mock diagnostic for testing
+		// This simulates finding a parameter 'x' in code but missing in docstring
+		const diagnostics: vscode.Diagnostic[] = [];
+
+		for (const func of functions) {
+			// Check if parameter 'x' exists in code but not in docstring
+			const xParam = func.parameters.find(p => p.name === 'x');
+			if (xParam && func.docstring && !func.docstring.includes('x')) {
+				const diagnostic = new vscode.Diagnostic(
+					func.docstringRange || func.range,
+					`Parameter 'x' is missing in docstring for function '${func.name}'`,
+					vscode.DiagnosticSeverity.Warning
+				);
+				diagnostic.code = DiagnosticCode.PARAM_MISSING_IN_DOCSTRING;
+				diagnostic.source = 'docstring-verifier';
+				diagnostics.push(diagnostic);
+
+				logger.debug(`Created diagnostic for missing parameter 'x' in ${func.name}`);
+			}
+		}
+
+		// Step 3: Set diagnostics
+		if (diagnostics.length > 0) {
+			diagnosticCollection.set(document.uri, diagnostics);
+			logger.info(`Found ${diagnostics.length} issue(s) in ${document.fileName}`);
+		}
+
+	} catch (error) {
+		logger.error(`Error analyzing document: ${error}`);
+	}
 
 	logger.trace(`Analysis complete for: ${document.fileName}`);
 }

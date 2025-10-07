@@ -1,20 +1,6 @@
-# Random Notes
+# Future Roadmap
 
-## Technical Stack
-
-- **Language:** TypeScript
-- **Framework:** VS Code Extension API
-- **Python Parsing:** Python `ast` module (via child_process)
-- **TypeScript Parsing:** TypeScript Compiler API
-- **Testing:** Mocha + @vscode/test-electron
-- **Build:** esbuild
-- **Package Manager:** pnpm
-- **CI/CD:** GitHub Actions
-- **Linting:** ESLint + Prettier
-
-## Future Roadmap Ideas
-
-### Enhanced Language Support
+## Enhanced Language Support
 
 - [ ] NumPy docstring format
 - [ ] Full JSDoc specification support
@@ -22,7 +8,7 @@
 - [ ] Go (godoc)
 - [ ] Rust (rustdoc)
 
-### Advanced Analysis
+## Advanced Analysis
 
 - [ ] Integration with Pyright/mypy/ruff for accurate type inference
 - [ ] Data flow analysis for side effects
@@ -30,14 +16,14 @@
 - [ ] Class method inheritance validation
 - [ ] Decorator effects on function signatures
 
-### LLM Integration
+## LLM Integration
 
 - [ ] GPT-4/Claude for intelligent docstring generation
 - [ ] Natural language explanations for mismatches
 - [ ] Context-aware suggestions
 - [ ] Support for custom terminology/style guides
 
-### Team Features
+## Team Features
 
 - [ ] Workspace-wide docstring coverage reports
 - [ ] Team style guide enforcement
