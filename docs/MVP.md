@@ -1,9 +1,9 @@
 # Development Roadmap
 
-## 📊 Current Status
+## Current Status
 
 **Day 1:** ✅ Complete
-**Day 2:** 🔄 In Progress (Python AST Extractor complete, TypeScript wrapper next)
+**Day 2:** ✅ Complete
 
 ## Day 1: Entry Point + End-to-End Skeleton
 
@@ -49,14 +49,23 @@
   - Parses Args, Returns, Raises, Note sections
   - Handles alternative section names (Arguments, Return, Throws, etc.)
   - Supports multi-line descriptions
-- [ ] Integration
-  - Replace mock parser with real parser
+  - Implements IDocstringParser interface
+- [x] Integration
+  - Replaced MockParser with PythonParser
+  - Parse docstrings with GoogleDocstringParser
+  - Basic parameter validation (DSV101, DSV102)
   - Test on real Python files
-  - Update diagnostic logic to use parsed data
 
-**Current Status:** Python AST Extractor, TypeScript wrapper, and Google-style docstring parser complete. Next: Integration and analyzers.
+**Current Status:** Python AST Extractor, TypeScript wrapper, Google-style docstring parser, and basic integration complete. Extension now analyzes real Python code! Next: Core analyzers for returns and exceptions.
 
 **Milestone:** Extension analyzes real Python code with docstrings
+
+**Manual Testing:**
+
+1. Press F5 → Extension Development Host
+2. Open `examples/python/missing_parameter.py`
+3. See diagnostic: "Parameter 'x' is missing in docstring for function 'add_numbers'"
+4. No diagnostic for `subtract` function (properly documented)
 
 ## Day 3: Core Analyzers + Diagnostic Provider
 

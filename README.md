@@ -16,9 +16,9 @@ Build a VS Code extension that detects discrepancies between docstrings and actu
 
 The implementation plan can be found in [MVP.md](./docs/MVP.md).
 
-Sneak peek of the extension prototype (day 1) in action:
+Sneak peek of the extension prototype (day 2) in action:
 
-![Demo](./docs/day1.png)
+![Demo](./docs/day2.png)
 
 ## Limitations
 

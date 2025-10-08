@@ -1,13 +1,15 @@
 import * as vscode from 'vscode';
 import { Logger } from './utils/logger';
 import { IParser } from './parsers/base';
-import { MockPythonParser } from './parsers/python/mockParser';
+import { PythonParser } from './parsers/python/pythonParser';
 import { DiagnosticCode } from './diagnostics/types';
+import { GoogleDocstringParser, IDocstringParser } from './docstring/python';
 
 // Global instances
 let logger: Logger;
 let diagnosticCollection: vscode.DiagnosticCollection;
 let pythonParser: IParser;
+let docstringParser: IDocstringParser;
 
 /**
  * Called when the extension is activated.
@@ -22,9 +24,10 @@ export function activate(context: vscode.ExtensionContext) {
 	diagnosticCollection = vscode.languages.createDiagnosticCollection('docstring-verifier');
 	context.subscriptions.push(diagnosticCollection);
 
-	// Initialize parsers (mock for now, will be replaced with real parser in Day 2)
-	pythonParser = new MockPythonParser();
-	logger.debug('Using MockPythonParser for testing');
+	// Initialize parsers
+	pythonParser = new PythonParser(context);
+	docstringParser = new GoogleDocstringParser();
+	logger.info('Using PythonParser with GoogleDocstringParser');
 
 	// Register document change listener
 	context.subscriptions.push(
@@ -93,7 +96,7 @@ async function analyzeDocument(document: vscode.TextDocument): Promise<void> {
 	diagnosticCollection.delete(document.uri);
 
 	try {
-		// Step 1: Parse the document
+		// Step 1: Parse the document to extract functions
 		const functions = await pythonParser.parse(document);
 		logger.debug(`Found ${functions.length} functions in ${document.fileName}`);
 
@@ -101,31 +104,71 @@ async function analyzeDocument(document: vscode.TextDocument): Promise<void> {
 			return;
 		}
 
-		// Step 2: Create mock diagnostic for testing
-		// This simulates finding a parameter 'x' in code but missing in docstring
+		// Step 2: Parse docstrings and compare with actual code
 		const diagnostics: vscode.Diagnostic[] = [];
 
 		for (const func of functions) {
-			// Check if parameter 'x' exists in code but not in docstring
-			const xParam = func.parameters.find(p => p.name === 'x');
-			if (xParam && func.docstring && !func.docstring.includes('x')) {
-				const diagnostic = new vscode.Diagnostic(
-					func.docstringRange || func.range,
-					`Parameter 'x' is missing in docstring for function '${func.name}'`,
-					vscode.DiagnosticSeverity.Warning
-				);
-				diagnostic.code = DiagnosticCode.PARAM_MISSING_IN_DOCSTRING;
-				diagnostic.source = 'docstring-verifier';
-				diagnostics.push(diagnostic);
+			// Skip functions without docstrings
+			if (!func.docstring) {
+				logger.trace(`Function '${func.name}' has no docstring, skipping`);
+				continue;
+			}
 
-				logger.debug(`Created diagnostic for missing parameter 'x' in ${func.name}`);
+			// Parse the docstring
+			const parsedDocstring = docstringParser.parse(func.docstring);
+			logger.trace(`Parsed docstring for '${func.name}': ${parsedDocstring.parameters.length} params documented`);
+
+			// Step 3: Check for missing parameters in docstring (DSV102)
+			for (const codeParam of func.parameters) {
+				// Skip 'self' and 'cls' parameters
+				if (codeParam.name === 'self' || codeParam.name === 'cls') {
+					continue;
+				}
+
+				const docParam = parsedDocstring.parameters.find(p => p.name === codeParam.name);
+				if (!docParam) {
+					const diagnostic = new vscode.Diagnostic(
+						func.docstringRange || func.range,
+						`Parameter '${codeParam.name}' is missing in docstring for function '${func.name}'`,
+						vscode.DiagnosticSeverity.Warning
+					);
+					diagnostic.code = DiagnosticCode.PARAM_MISSING_IN_DOCSTRING;
+					diagnostic.source = 'docstring-verifier';
+					diagnostics.push(diagnostic);
+
+					logger.debug(`Found missing parameter '${codeParam.name}' in docstring of ${func.name}`);
+				}
+			}
+
+			// Step 4: Check for extra parameters in docstring (DSV101)
+			for (const docParam of parsedDocstring.parameters) {
+				// Skip 'self' and 'cls' parameters (even if documented)
+				if (docParam.name === 'self' || docParam.name === 'cls') {
+					continue;
+				}
+
+				const codeParam = func.parameters.find(p => p.name === docParam.name);
+				if (!codeParam) {
+					const diagnostic = new vscode.Diagnostic(
+						func.docstringRange || func.range,
+						`Parameter '${docParam.name}' is documented but not found in function '${func.name}'`,
+						vscode.DiagnosticSeverity.Warning
+					);
+					diagnostic.code = DiagnosticCode.PARAM_MISSING_IN_CODE;
+					diagnostic.source = 'docstring-verifier';
+					diagnostics.push(diagnostic);
+
+					logger.debug(`Found extra parameter '${docParam.name}' in docstring of ${func.name}`);
+				}
 			}
 		}
 
-		// Step 3: Set diagnostics
+		// Step 5: Set diagnostics
 		if (diagnostics.length > 0) {
 			diagnosticCollection.set(document.uri, diagnostics);
 			logger.info(`Found ${diagnostics.length} issue(s) in ${document.fileName}`);
+		} else {
+			logger.debug(`No issues found in ${document.fileName}`);
 		}
 
 	} catch (error) {
