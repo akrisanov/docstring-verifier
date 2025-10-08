@@ -5,6 +5,11 @@ node_modules
 *.vsix
 Notes.md
 
+# Coverage
+coverage/
+.nyc_output/
+*.lcov
+
 # Python
 __pycache__/
 *.py[cod]

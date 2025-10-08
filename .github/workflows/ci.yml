@@ -85,10 +85,14 @@ jobs:
         uses: codecov/codecov-action@v4
         if: success()
         with:
-          file: tools/python/coverage.xml
+          files: tools/python/coverage.xml
           flags: python
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
+          name: python-coverage
+          working-directory: ./
+          root_dir: ${{ github.workspace }}
 
   test:
     name: Test
@@ -124,16 +128,21 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run tests
-        run: xvfb-run -a pnpm test
+      - name: Run tests with coverage
+        run: xvfb-run -a pnpm run test:coverage
         if: runner.os == 'Linux'
 
-      - name: Upload coverage reports
+      - name: Upload TypeScript coverage to Codecov
         uses: codecov/codecov-action@v4
         if: success()
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
+          files: ./coverage/lcov.info
+          flags: typescript
           fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
+          name: typescript-coverage
 
   build:
     name: Build Extension

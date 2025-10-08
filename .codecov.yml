@@ -15,28 +15,30 @@ coverage:
         informational: false
 
 # Separate coverage for different parts
-flag_management:
-  default_rules:
+flags:
+  typescript:
+    paths:
+      - src/
     carryforward: true
-  individual_flags:
-    - name: typescript
-      paths:
-        - src/
-    - name: python
-      paths:
-        - tools/python/
+  python:
+    paths:
+      - tools/python/
+    carryforward: true
 
 # Ignore paths
 ignore:
   - "dist"
   - "out"
+  - "node_modules"
   - "*.test.ts"
   - "**/*.test.ts"
-  - "tools/python/tests"
+  - "src/test/**"
+  - "tools/python/tests/**"
+  - "**/__pycache__/**"
 
 # Comment on PR with coverage report
 comment:
-  layout: "header, diff, flags, components"
+  layout: "header, diff, flags, files"
   behavior: default
   require_changes: false
   require_base: false # Don't require baseline for first PR
