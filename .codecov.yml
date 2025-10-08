@@ -1,7 +1,15 @@
 # Codecov configuration
 # https://docs.codecov.com/docs/codecov-yaml
 
+codecov:
+  require_ci_to_pass: true
+  notify:
+    wait_for_ci: true
+
 coverage:
+  precision: 2
+  round: down
+  range: 70...100
   status:
     project:
       default:
@@ -35,6 +43,8 @@ ignore:
   - "src/test/**"
   - "tools/python/tests/**"
   - "**/__pycache__/**"
+  - "coverage/**"
+  - "scripts/**"
 
 # Comment on PR with coverage report
 comment:
@@ -42,3 +52,4 @@ comment:
   behavior: default
   require_changes: false
   require_base: false # Don't require baseline for first PR
+  show_carryforward_flags: true

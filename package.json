@@ -81,6 +81,7 @@
 		"format:python": "cd tools/python && (uv run ruff format . || ruff format .)",
 		"test": "vscode-test",
 		"test:coverage": "vscode-test --coverage --coverage-output ./coverage --coverage-reporter lcov --coverage-reporter text-summary && node scripts/fix-lcov-paths.js",
+		"test:validate-coverage": "node scripts/validate-coverage.js",
 		"test:python": "cd tools/python && uv run python -m pytest"
 	},
 	"devDependencies": {

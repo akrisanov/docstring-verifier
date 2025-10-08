@@ -10,7 +10,15 @@ const path = require('path');
 const lcovPath = path.join(__dirname, '../coverage/lcov.info');
 
 if (!fs.existsSync(lcovPath)) {
-	console.error('lcov.info not found at:', lcovPath);
+	console.error('❌ lcov.info not found at:', lcovPath);
+	process.exit(1);
+}
+
+const stats = fs.statSync(lcovPath);
+if (stats.size === 0) {
+	console.error('❌ lcov.info is empty (0 bytes)');
+	console.error('This usually means coverage was not generated properly.');
+	console.error('Check if tests ran successfully.');
 	process.exit(1);
 }
 
@@ -18,14 +26,21 @@ let content = fs.readFileSync(lcovPath, 'utf8');
 
 // Ensure all SF: paths are relative to project root (src/...)
 // Remove any absolute paths or incorrect prefixes
-content = content.replace(/^SF:.*\/src\//gm, 'SF:src/');
-content = content.replace(/^SF:(?!src\/)(.+)/gm, (match, filepath) => {
+content = content.replace(/^SF:.*[\/\\]src[\/\\]/gm, 'SF:src/');
+content = content.replace(/^SF:(?!src[\/\\])(.+)/gm, (match, filepath) => {
 	// If path doesn't start with src/, try to fix it
-	if (filepath.includes('/src/')) {
-		const srcIndex = filepath.indexOf('/src/');
-		return `SF:${filepath.substring(srcIndex + 1)}`;
+	const pathSep = filepath.includes('\\') ? '\\' : '/';
+	const srcPattern = `${pathSep}src${pathSep}`;
+	if (filepath.includes(srcPattern)) {
+		const srcIndex = filepath.indexOf(srcPattern);
+		return `SF:${filepath.substring(srcIndex + 1).replace(/\\/g, '/')}`;
 	}
 	return match;
+});
+
+// Normalize all path separators to forward slashes
+content = content.replace(/^SF:(.+)$/gm, (match, filepath) => {
+	return `SF:${filepath.replace(/\\/g, '/')}`;
 });
 
 fs.writeFileSync(lcovPath, content, 'utf8');

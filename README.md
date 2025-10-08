@@ -84,6 +84,26 @@ For detailed architecture, see [Design.md](./docs/Design.md).
 - **Package Manager:** pnpm
 - **CI/CD:** GitHub Actions
 - **Linting:** ESLint + Prettier
+- **Coverage:** Istanbul (lcov) → Codecov
+
+## Development
+
+### Running Tests
+
+```bash
+# Run tests without coverage
+pnpm run test
+
+# Run tests with coverage
+pnpm run test:coverage
+
+# Validate coverage report
+pnpm run test:validate-coverage
+```
+
+### Coverage Reports
+
+Coverage reports are automatically generated and uploaded to [Codecov](https://codecov.io/gh/akrisanov/docstring-verifier).
 
 ---
 
