@@ -46,6 +46,41 @@ interface UvDownloadInfo {
  * - Lazy download of uv binary (platform-specific, ~12 MB)
  * - Saves to extension global storage
  * - Priority: bundled uv → system uv → Python Extension API → system python3
+ *
+ * TODO (Post-MVP): Performance optimizations for subprocess execution
+ * Current approach spawns new Python process for each file (~100-400ms overhead):
+ * - Process creation: 10-50ms
+ * - Python interpreter load: 50-200ms
+ * - Module imports (ast, json): 20-100ms
+ * - Actual parsing: 10-50ms
+ *
+ * Possible optimizations:
+ * 1. **Persistent Python REPL** (Best ROI, ~5-10x speedup)
+ *    - Keep single Python process alive
+ *    - Send commands via stdin, read results from stdout
+ *    - Reduces overhead from 400ms → ~50ms per file
+ *    - Challenge: Error recovery, process lifecycle management
+ *
+ * 2. **WebAssembly Python** (Future-proof, ~10-20x speedup)
+ *    - Use Pyodide or MicroPython compiled to WASM
+ *    - Run Python in same Node.js process (no IPC)
+ *    - Reduces overhead from 400ms → ~5-10ms per file
+ *    - Challenge: Bundle size (~8-15MB), limited stdlib
+ *
+ * 3. **Batch processing** (Simple, ~2x speedup)
+ *    - Modify ast_extractor.py to accept multiple files
+ *    - Parse all workspace files in one subprocess call
+ *    - Reduces overhead from 400ms × N → 400ms total
+ *    - Challenge: Workspace-wide analysis may be slow
+ *
+ * 4. **Native parser** (Most complex, ~50-100x speedup)
+ *    - Implement Python AST parser in TypeScript/Rust
+ *    - Use tree-sitter-python for incremental parsing
+ *    - Reduces overhead from 400ms → ~5ms per file
+ *    - Challenge: High maintenance cost, language feature parity
+ *
+ * Note: Analysis itself is fast (~2ms for 20 functions).
+ * Subprocess overhead is the real bottleneck (99.5% of total time).
  */
 export class PythonExecutor {
 	private static readonly UV_VERSION = '0.4.30';
@@ -538,6 +573,15 @@ export class PythonExecutor {
 	 * @param scriptPath Path to the Python script
 	 * @param args Arguments to pass to the script
 	 * @returns Execution result with stdout, stderr, and exit code
+	 *
+	 * TODO (Post-MVP): Consider connection pooling or process reuse
+	 * Current implementation spawns a new process for every call.
+	 * For workspaces with many files, this creates significant overhead.
+	 *
+	 * Alternative approaches:
+	 * - Keep a long-lived Python REPL and send commands via stdin
+	 * - Implement request queuing to batch multiple parse requests
+	 * - Use worker threads pool with persistent Python interpreters
 	 */
 	async execute(scriptPath: string, args: string[] = []): Promise<PythonExecutionResult> {
 		const pythonCmd = await this.detectPythonCommand();

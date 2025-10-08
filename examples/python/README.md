@@ -5,18 +5,39 @@ docstring mismatches detected by the extension.
 
 ## Files
 
-- **missing_parameter.py** - DSV102: Parameter in code but missing in docstring
-- **return_mismatch.py** - DSV201: Return type mismatch between code and docstring
-- **missing_exception.py** - DSV301: Exception raised but not documented
+### Signature Analyzer (DSV1xx)
+
+- **dsv101_missing_in_code.py** - DSV101: Parameter documented in docstring but not present in function signature
+- **dsv102_missing_in_docstring.py** - DSV102: Parameter in code but missing in docstring
+- **dsv103_type_mismatch.py** - DSV103: Parameter type in code doesn't match type in docstring
+- **dsv104_optional_mismatch.py** - DSV104: Parameter optional/required status mismatch between code and docstring
+
+### Return Analyzer (DSV2xx)
+
+- **dsv201_return_mismatch.py** - DSV201: Return type mismatch between code and docstring
+
+### Exception Analyzer (DSV3xx)
+
+- **dsv301_missing_exception.py** - DSV301: Exception raised but not documented in docstring
 
 ## Usage
 
-1. Press F5 to launch Extension Development Host
-2. Open any file from this folder
-3. Observe warnings/errors in the Problems panel
+1. Press **F5** to launch Extension Development Host
+2. Open any file from this folder (e.g., `dsv101_missing_in_code.py`)
+3. Observe warnings/errors in the **Problems** panel (Cmd+Shift+M)
 4. Hover over yellow/red squiggly lines to see diagnostic messages
+
+## File Naming Convention
+
+Files follow the pattern: `dsv{code}_{description}.py`
+
+- `dsv` prefix indicates "Docstring Verifier"
+- `{code}` is the diagnostic code (101, 102, 201, 301, etc.)
+- `{description}` briefly describes the issue
 
 ## Notes
 
-These files are for **manual testing** during development.
-Unit test fixtures are located in `src/test/fixtures/python/`.
+- These files are for **manual testing** during development
+- Each file contains both **incorrect** examples (that should trigger warnings) and **correct** examples (that should not)
+- Unit test fixtures are located in `src/test/fixtures/python/`
+- Python AST extractor fixtures are in `tools/python/tests/fixtures/`

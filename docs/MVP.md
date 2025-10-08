@@ -71,11 +71,11 @@
 
 ### Validation Rules
 
-- [ ] Signature Analyzer
-  - DSV101: Parameter in docstring but not in code
-  - DSV102: Parameter in code but not in docstring
-  - DSV103: Parameter type mismatch
-  - DSV104: Optional/required mismatch
+- [x] Signature Analyzer
+  - [x] DSV101: Parameter in docstring but not in code
+  - [x] DSV102: Parameter in code but not in docstring
+  - [x] DSV103: Parameter type mismatch
+  - [x] DSV104: Optional/required mismatch
 - [ ] Return Analyzer
   - DSV201: Return type mismatch
   - DSV202: Missing return in docstring
@@ -85,11 +85,11 @@
   - DSV301: Exception raised but not documented
   - DSV302: Exception documented but not raised
   - Track exceptions in function body
-- [ ] Diagnostic Factory
+- [x] Diagnostic Factory
   - Create `vscode.Diagnostic` with code, severity, range
   - Assign diagnostic codes (DSV101-302)
   - Set proper severity levels
-- [ ] Integration into Extension
+- [x] Integration into Extension
   - Run all analyzers on parsed functions
   - Collect mismatches
   - Create and display diagnostics

@@ -1,15 +1,17 @@
 import * as assert from 'assert';
-
-// You can import and use all API from the 'vscode' module
-// as well as import your extension to test it
 import * as vscode from 'vscode';
-// import * as myExtension from '../../extension';
 
 suite('Extension Test Suite', () => {
-	vscode.window.showInformationMessage('Start all tests.');
+	test('Extension should be present', () => {
+		assert.ok(vscode.extensions.getExtension('akrisanov.docstring-verifier'));
+	});
 
-	test('Sample test', () => {
-		assert.strictEqual(-1, [1, 2, 3].indexOf(5));
-		assert.strictEqual(-1, [1, 2, 3].indexOf(0));
+	test('Extension should activate', async function () {
+		this.timeout(10000);
+
+		const ext = vscode.extensions.getExtension('akrisanov.docstring-verifier');
+		await ext?.activate();
+
+		assert.ok(ext?.isActive, 'Extension should be activated');
 	});
 });

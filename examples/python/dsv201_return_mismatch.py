@@ -1,6 +1,8 @@
 """
-Example: Return type mismatch
-This demonstrates DSV201: RETURN_TYPE_MISMATCH
+DSV201: Return type mismatch
+
+This file demonstrates cases where the return type in the docstring
+does not match the actual return type in the code.
 """
 
 
@@ -11,8 +13,7 @@ def get_user_data(user_id):
         user_id (int): User identifier
 
     Returns:
-        dict: User information
-        # But the actual return is a list!
+        dict: User information  # ISSUE: Actually returns a list!
     """
     return [{"id": user_id, "name": "John"}]
 
@@ -20,11 +21,13 @@ def get_user_data(user_id):
 def calculate_average(numbers):
     """Calculate average of numbers.
 
+    This function is properly documented - return type is correct.
+    This should NOT trigger any warnings.
+
     Args:
         numbers (list): List of numbers
 
     Returns:
         float: Average value
-        # This is correct!
     """
     return sum(numbers) / len(numbers)

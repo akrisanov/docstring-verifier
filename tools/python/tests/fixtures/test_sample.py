@@ -1,4 +1,14 @@
-"""Test sample for AST extractor."""
+"""
+Test sample for AST extractor.
+
+This file contains various function patterns used to test
+the Python AST extractor's ability to parse:
+- Function signatures with type hints
+- Docstrings with Args/Returns/Raises sections
+- Default parameters
+- Variable arguments (*args, **kwargs)
+- Global variable modifications
+"""
 
 
 def calculate(x: int, y: int) -> int:

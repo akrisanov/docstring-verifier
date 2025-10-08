@@ -61,4 +61,47 @@ export class DiagnosticFactory {
 		diagnostic.source = DiagnosticFactory.SOURCE;
 		return diagnostic;
 	}
+
+	/**
+	 * Create diagnostic for parameter type mismatch (DSV103)
+	 */
+	static createParamTypeMismatch(
+		paramName: string,
+		functionName: string,
+		codeType: string | null,
+		docType: string | null,
+		range: vscode.Range
+	): vscode.Diagnostic {
+		const codeTypeStr = codeType || 'no type hint';
+		const docTypeStr = docType || 'no type';
+		const diagnostic = new vscode.Diagnostic(
+			range,
+			`Parameter '${paramName}' type mismatch in function '${functionName}': code has '${codeTypeStr}', docstring has '${docTypeStr}'`,
+			vscode.DiagnosticSeverity.Warning
+		);
+		diagnostic.code = DiagnosticCode.PARAM_TYPE_MISMATCH;
+		diagnostic.source = DiagnosticFactory.SOURCE;
+		return diagnostic;
+	}
+
+	/**
+	 * Create diagnostic for parameter optional/required mismatch (DSV104)
+	 */
+	static createParamOptionalMismatch(
+		paramName: string,
+		functionName: string,
+		isOptionalInCode: boolean,
+		range: vscode.Range
+	): vscode.Diagnostic {
+		const codeStatus = isOptionalInCode ? 'optional (has default value)' : 'required';
+		const docStatus = isOptionalInCode ? 'required' : 'optional';
+		const diagnostic = new vscode.Diagnostic(
+			range,
+			`Parameter '${paramName}' is ${codeStatus} in code but marked as ${docStatus} in docstring for function '${functionName}'`,
+			vscode.DiagnosticSeverity.Information
+		);
+		diagnostic.code = DiagnosticCode.PARAM_OPTIONAL_MISMATCH;
+		diagnostic.source = DiagnosticFactory.SOURCE;
+		return diagnostic;
+	}
 }

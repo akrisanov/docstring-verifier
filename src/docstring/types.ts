@@ -2,25 +2,26 @@
  * Describes a parameter documented in docstring.
  */
 export interface DocstringParameterDescriptor {
-    name: string;
-    type: string | null;
-    description: string;
+	name: string;
+	type: string | null;
+	description: string;
+	isOptional?: boolean;
 }
 
 /**
  * Describes return value documented in docstring.
  */
 export interface DocstringReturnDescriptor {
-    type: string | null;
-    description: string;
+	type: string | null;
+	description: string;
 }
 
 /**
  * Describes an exception documented in docstring.
  */
 export interface DocstringExceptionDescriptor {
-    type: string;
-    description: string;
+	type: string;
+	description: string;
 }
 
 /**
@@ -28,8 +29,8 @@ export interface DocstringExceptionDescriptor {
  * This is the main output of docstring parsers (Google, Sphinx, JSDoc, etc.)
  */
 export interface DocstringDescriptor {
-    parameters: DocstringParameterDescriptor[];
-    returns: DocstringReturnDescriptor | null;
-    raises: DocstringExceptionDescriptor[];
-    notes: string | null;
+	parameters: DocstringParameterDescriptor[];
+	returns: DocstringReturnDescriptor | null;
+	raises: DocstringExceptionDescriptor[];
+	notes: string | null;
 }
