@@ -137,7 +137,9 @@ jobs:
         run: |
           echo "=== Running tests with coverage ==="
           echo "Command: xvfb-run -a pnpm run --filter=docstring-verifier test"
-          echo "First, compile tests..."
+          echo "First, compile the extension..."
+          pnpm run compile
+          echo "Now compile tests..."
           pnpm run compile-tests
           echo "Now run tests with coverage..."
           xvfb-run -a pnpm exec vscode-test --coverage --coverage-output ./coverage --coverage-reporter lcov --coverage-reporter text-summary

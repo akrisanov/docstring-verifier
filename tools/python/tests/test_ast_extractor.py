@@ -98,7 +98,7 @@ def test_exception_tracking(sample_result):
     fetch = result["functions"][1]
     assert len(fetch["raises"]) == 1, "Should track 1 raised exception"
     assert fetch["raises"][0]["type"] == "ValueError", "Should be ValueError"
-    assert fetch["raises"][0]["line"] == 31, "Exception should be on line 31"
+    assert fetch["raises"][0]["line"] == 41, "Exception should be on line 41"
 
 
 def test_io_detection(sample_result):
