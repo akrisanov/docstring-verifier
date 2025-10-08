@@ -1,8 +1,5 @@
 # Development Roadmap
 
-**Philosophy:** Build working extension first, then enhance with real parsers.
-Every day should produce a demonstrable feature in VS Code.
-
 ## 📊 Current Status
 
 **Day 1:** ✅ Complete
@@ -42,11 +39,12 @@ Every day should produce a demonstrable feature in VS Code.
 ### Implementation
 
 - [x] Python AST Extractor
-- [ ] Python Parser (TypeScript wrapper)
-  - Spawn Python subprocess: `python3 ast_extractor.py <file>`
-  - Parse JSON output
-  - Map to `FunctionDescriptor` interface
-  - Error handling: timeout, fallback, logging
+  - Extracts function signatures, parameters, return types, exceptions
+  - Uses Python AST module (stdlib only)
+  - Outputs TypeScript-compatible JSON (camelCase, VS Code Range format)
+- [x] Python Parser (TypeScript wrapper)
+  - `PythonExecutor` class for subprocess management
+  - `PythonParser` class implementing `IParser` interface
 - [ ] Google-style Docstring Parser
   - Regex for section headers: `Args:`, `Returns:`, `Raises:`
   - Parse parameter lines: `name (type): description`
@@ -58,7 +56,7 @@ Every day should produce a demonstrable feature in VS Code.
   - Test on real Python files
   - Update diagnostic logic to use parsed data
 
-**Current Status:** Python AST Extractor complete with tests, docs, and CI/CD. Next: TypeScript wrapper.
+**Current Status:** Python AST Extractor and TypeScript wrapper complete. Next: Docstring parser and integration.
 
 **Milestone:** Extension analyzes real Python code with docstrings
 
