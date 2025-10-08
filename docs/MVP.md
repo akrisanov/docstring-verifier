@@ -45,18 +45,16 @@
 - [x] Python Parser (TypeScript wrapper)
   - `PythonExecutor` class for subprocess management
   - `PythonParser` class implementing `IParser` interface
-- [ ] Google-style Docstring Parser
-  - Regex for section headers: `Args:`, `Returns:`, `Raises:`
-  - Parse parameter lines: `name (type): description`
-  - Parse return section
-  - Parse exceptions
-  - Map to `DocstringInfo` interface
+- [x] Google-style Docstring Parser
+  - Parses Args, Returns, Raises, Note sections
+  - Handles alternative section names (Arguments, Return, Throws, etc.)
+  - Supports multi-line descriptions
 - [ ] Integration
   - Replace mock parser with real parser
   - Test on real Python files
   - Update diagnostic logic to use parsed data
 
-**Current Status:** Python AST Extractor and TypeScript wrapper complete. Next: Docstring parser and integration.
+**Current Status:** Python AST Extractor, TypeScript wrapper, and Google-style docstring parser complete. Next: Integration and analyzers.
 
 **Milestone:** Extension analyzes real Python code with docstrings
 
