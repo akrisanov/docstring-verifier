@@ -43,7 +43,10 @@ python_functions = ["test_*"]
 
 [tool.coverage.run]
 source = ["."]
-omit = ["tests/*", "*/test_*.py"]
+omit = ["tests/*", "*/test_*.py", ".venv/*"]
+concurrency = ["thread", "multiprocessing"]
+parallel = true
+sigterm = true
 
 [tool.coverage.report]
 exclude_lines = [

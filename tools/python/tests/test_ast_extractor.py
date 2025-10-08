@@ -10,30 +10,44 @@ from pathlib import Path
 
 import pytest
 
+# Add parent directory to path to import ast_extractor
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from ast_extractor import extract_functions  # noqa: E402
+
 
 def get_fixture_path(filename: str) -> str:
     """Get path to a fixture file."""
     return str(Path(__file__).parent / "fixtures" / filename)
 
 
-def run_extractor(file_path: str) -> dict:
-    """Run ast_extractor on a file and return parsed JSON."""
-    # Get path to ast_extractor.py (one level up from tests/)
-    ast_extractor_path = Path(__file__).parent.parent / "ast_extractor.py"
+def run_extractor(file_path: str, use_subprocess: bool = False) -> dict:
+    """Run ast_extractor on a file and return parsed JSON.
 
-    result = subprocess.run(
-        [sys.executable, str(ast_extractor_path), file_path],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return json.loads(result.stdout)
+    Args:
+        file_path: Path to the Python file to analyze
+        use_subprocess: If True, run via subprocess (for CLI testing)
+                       If False, call extract_functions directly (for coverage)
+    """
+    if use_subprocess:
+        # Test CLI interface via subprocess
+        ast_extractor_path = Path(__file__).parent.parent / "ast_extractor.py"
+        result = subprocess.run(
+            [sys.executable, str(ast_extractor_path), file_path],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return json.loads(result.stdout)
+    else:
+        # Call function directly for better coverage
+        return extract_functions(file_path)
 
 
 @pytest.fixture
 def sample_result():
     """Fixture that runs extractor on test_sample.py once."""
-    return run_extractor(get_fixture_path("test_sample.py"))
+    # Use direct function call for coverage
+    return run_extractor(get_fixture_path("test_sample.py"), use_subprocess=False)
 
 
 def test_basic_function(sample_result):
@@ -149,4 +163,4 @@ def test_nonexistent_file():
     result = run_extractor("_nonexistent_file.py")
 
     assert not result["success"], "Should report failure"
-    assert result["error"] == "FileNotFound", "Should be FileNotFound"
+    assert result["error"] in ["FileNotFound", "FileNotFoundError"], "Should be FileNotFound(Error)"

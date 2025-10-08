@@ -21,7 +21,7 @@ uv sync --all-groups
 # Run tests
 uv run python -m pytest
 
-# Run tests with coverage (Note: coverage shows 0% because tests use subprocess)
+# Run tests with coverage
 uv run python -m pytest --cov
 
 # Lint code
@@ -36,9 +36,6 @@ uv run ruff format .
 # Run ast_extractor
 uv run python ast_extractor.py tests/fixtures/test_sample.py
 ```
-
-> **Note:** Coverage reports 0% because tests execute `ast_extractor.py` via subprocess.
-> This is intentional as we're testing the CLI interface.
 
 ## From Project Root
 

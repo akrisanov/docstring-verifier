@@ -6,7 +6,7 @@ coverage:
     project:
       default:
         target: auto
-        threshold: 1%  # Allow 1% decrease
+        threshold: 1% # Allow 1% decrease
         informational: false
     patch:
       default:
@@ -39,4 +39,4 @@ comment:
   layout: "header, diff, flags, components"
   behavior: default
   require_changes: false
-  require_base: false  # Don't require baseline for first PR
+  require_base: false # Don't require baseline for first PR

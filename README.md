@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/akrisanov/docstring-verifier/actions/workflows/ci.yml/badge.svg)](https://github.com/akrisanov/docstring-verifier/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/akrisanov/docstring-verifier/actions/workflows/codeql.yml/badge.svg)](https://github.com/akrisanov/docstring-verifier/actions/workflows/codeql.yml)
+[![codecov](https://codecov.io/gh/akrisanov/docstring-verifier/branch/main/graph/badge.svg)](https://codecov.io/gh/akrisanov/docstring-verifier)
 
 ## Project Goal
 
