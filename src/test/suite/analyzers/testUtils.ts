@@ -18,6 +18,11 @@ import {
 export const TEST_RANGE = new vscode.Range(0, 0, 10, 0);
 
 /**
+ * Mock URI for tests
+ */
+export const TEST_URI = vscode.Uri.parse('file:///test/file.py');
+
+/**
  * Options for creating a FunctionDescriptor
  */
 export interface CreateFunctionOptions {

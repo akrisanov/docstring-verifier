@@ -42,12 +42,16 @@ export class PythonSignatureAnalyzer implements IAnalyzer {
 	 * - Typical function has 2-10 params → ~100 operations
 	 * - Real bottleneck is Python subprocess parsing, not analysis
 	 */
-	analyze(func: FunctionDescriptor, docstring: DocstringDescriptor): vscode.Diagnostic[] {
+	analyze(
+		func: FunctionDescriptor,
+		docstring: DocstringDescriptor,
+		documentUri: vscode.Uri
+	): vscode.Diagnostic[] {
 		const diagnostics: vscode.Diagnostic[] = [];
 		const range = func.docstringRange || func.range;
 
 		// Check for parameters missing in docstring (DSV102)
-		diagnostics.push(...this.checkMissingInDocstring(func, docstring, range));
+		diagnostics.push(...this.checkMissingInDocstring(func, docstring, range, documentUri));
 
 		// Check for extra parameters in docstring (DSV101)
 		diagnostics.push(...this.checkMissingInCode(func, docstring, range));
@@ -67,7 +71,8 @@ export class PythonSignatureAnalyzer implements IAnalyzer {
 	private checkMissingInDocstring(
 		func: FunctionDescriptor,
 		docstring: DocstringDescriptor,
-		range: vscode.Range
+		range: vscode.Range,
+		documentUri: vscode.Uri
 	): vscode.Diagnostic[] {
 		const diagnostics: vscode.Diagnostic[] = [];
 
@@ -80,10 +85,14 @@ export class PythonSignatureAnalyzer implements IAnalyzer {
 			// Check if parameter is documented
 			const docParam = docstring.parameters.find(p => p.name === codeParam.name);
 			if (!docParam) {
+				// Create location for the parameter in code
+				const paramLocation = new vscode.Location(documentUri, func.range);
+
 				const diagnostic = DiagnosticFactory.createParamMissingInDocstring(
 					codeParam.name,
 					func.name,
-					range
+					range,
+					paramLocation
 				);
 				diagnostics.push(diagnostic);
 

@@ -17,9 +17,14 @@ export class PythonExceptionAnalyzer implements IAnalyzer {
 	 *
 	 * @param func - Function metadata from code parser
 	 * @param docstring - Parsed docstring information
+	 * @param documentUri - URI of the document being analyzed
 	 * @returns Array of diagnostics for detected issues
 	 */
-	analyze(func: FunctionDescriptor, docstring: DocstringDescriptor): vscode.Diagnostic[] {
+	analyze(
+		func: FunctionDescriptor,
+		docstring: DocstringDescriptor,
+		documentUri: vscode.Uri
+	): vscode.Diagnostic[] {
 		const diagnostics: vscode.Diagnostic[] = [];
 
 		// Skip analysis if function has no docstring
@@ -28,7 +33,7 @@ export class PythonExceptionAnalyzer implements IAnalyzer {
 		}
 
 		// Check for exceptions raised but not documented (DSV301)
-		diagnostics.push(...this.checkMissingDocumentation(func, docstring));
+		diagnostics.push(...this.checkMissingDocumentation(func, docstring, documentUri));
 
 		// Check for exceptions documented but not raised (DSV302)
 		diagnostics.push(...this.checkMissingRaises(func, docstring));
@@ -41,11 +46,13 @@ export class PythonExceptionAnalyzer implements IAnalyzer {
 	 *
 	 * @param func - Function metadata
 	 * @param docstring - Parsed docstring
+	 * @param documentUri - URI of the document being analyzed
 	 * @returns Diagnostics for undocumented exceptions
 	 */
 	private checkMissingDocumentation(
 		func: FunctionDescriptor,
-		docstring: DocstringDescriptor
+		docstring: DocstringDescriptor,
+		documentUri: vscode.Uri
 	): vscode.Diagnostic[] {
 		const diagnostics: vscode.Diagnostic[] = [];
 
@@ -65,13 +72,15 @@ export class PythonExceptionAnalyzer implements IAnalyzer {
 
 			// Create diagnostic at the raise statement location
 			const line = raisedException.line - 1; // Convert to 0-based
-			const range = new vscode.Range(line, 0, line, Number.MAX_SAFE_INTEGER);
+			const raiseRange = new vscode.Range(line, 0, line, Number.MAX_SAFE_INTEGER);
+			const raiseLocation = new vscode.Location(documentUri, raiseRange);
 
 			diagnostics.push(
 				DiagnosticFactory.createExceptionNotDocumented(
 					raisedException.type,
 					func.name,
-					range
+					func.docstringRange!,
+					raiseLocation
 				)
 			);
 		}

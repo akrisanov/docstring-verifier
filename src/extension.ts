@@ -127,9 +127,9 @@ async function analyzeDocument(document: vscode.TextDocument): Promise<void> {
 
 			// Use analyzers to validate parameters and returns
 			const funcDiagnostics = [
-				...signatureAnalyzer.analyze(func, parsedDocstring),
-				...returnAnalyzer.analyze(func, parsedDocstring),
-				...exceptionAnalyzer.analyze(func, parsedDocstring)
+				...signatureAnalyzer.analyze(func, parsedDocstring, document.uri),
+				...returnAnalyzer.analyze(func, parsedDocstring, document.uri),
+				...exceptionAnalyzer.analyze(func, parsedDocstring, document.uri)
 			];
 			diagnostics.push(...funcDiagnostics);
 		}

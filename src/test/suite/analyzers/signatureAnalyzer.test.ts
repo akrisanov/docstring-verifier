@@ -6,7 +6,8 @@ import {
 	createTestFunction,
 	createTestDocstring,
 	createTestParameter,
-	createTestDocstringParameter
+	createTestDocstringParameter,
+	TEST_URI
 } from './testUtils';
 
 suite('PythonSignatureAnalyzer - Type Mismatch Tests', () => {
@@ -25,7 +26,7 @@ suite('PythonSignatureAnalyzer - Type Mismatch Tests', () => {
 			parameters: [createTestDocstringParameter('age', 'str', 'Age')]
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const typeMismatch = diagnostics.find(d => d.code === DiagnosticCode.PARAM_TYPE_MISMATCH);
 
 		assert.ok(typeMismatch, 'Should detect type mismatch');
@@ -52,7 +53,7 @@ suite('PythonSignatureAnalyzer - Type Mismatch Tests', () => {
 				parameters: [createTestDocstringParameter('param', doc, 'Test')]
 			});
 
-			const diagnostics = analyzer.analyze(func, docstring);
+			const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 			const typeMismatch = diagnostics.find(d => d.code === DiagnosticCode.PARAM_TYPE_MISMATCH);
 
 			assert.strictEqual(
@@ -72,7 +73,7 @@ suite('PythonSignatureAnalyzer - Type Mismatch Tests', () => {
 			parameters: [createTestDocstringParameter('value', 'Optional[int]', 'Value')]
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const typeMismatch = diagnostics.find(d => d.code === DiagnosticCode.PARAM_TYPE_MISMATCH);
 
 		assert.strictEqual(typeMismatch, undefined, 'Should normalize Optional[int] to int|none');
@@ -87,7 +88,7 @@ suite('PythonSignatureAnalyzer - Type Mismatch Tests', () => {
 			parameters: [createTestDocstringParameter('param', 'STR', 'Test')]
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const typeMismatch = diagnostics.find(d => d.code === DiagnosticCode.PARAM_TYPE_MISMATCH);
 
 		assert.strictEqual(typeMismatch, undefined, 'Should be case-insensitive');
@@ -102,7 +103,7 @@ suite('PythonSignatureAnalyzer - Type Mismatch Tests', () => {
 			parameters: []  // No parameters documented
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const typeMismatch = diagnostics.filter(d => d.code === DiagnosticCode.PARAM_TYPE_MISMATCH);
 
 		assert.strictEqual(typeMismatch.length, 0, 'Should not check types when param missing in docstring');
@@ -123,7 +124,7 @@ suite('PythonSignatureAnalyzer - Type Mismatch Tests', () => {
 			]
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const typeMismatch = diagnostics.filter(d => d.code === DiagnosticCode.PARAM_TYPE_MISMATCH);
 
 		assert.strictEqual(typeMismatch.length, 0, 'Should skip implicit parameters');
@@ -138,7 +139,7 @@ suite('PythonSignatureAnalyzer - Type Mismatch Tests', () => {
 			parameters: [createTestDocstringParameter('x', 'int', 'X value')]
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const typeMismatch = diagnostics.filter(d => d.code === DiagnosticCode.PARAM_TYPE_MISMATCH);
 
 		assert.strictEqual(typeMismatch.length, 0, 'Should not check when code has no type hint');
@@ -153,7 +154,7 @@ suite('PythonSignatureAnalyzer - Type Mismatch Tests', () => {
 			parameters: [createTestDocstringParameter('x', null, 'X value')]
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const typeMismatch = diagnostics.filter(d => d.code === DiagnosticCode.PARAM_TYPE_MISMATCH);
 
 		assert.strictEqual(typeMismatch.length, 0, 'Should not check when docstring has no type');
@@ -176,7 +177,7 @@ suite('PythonSignatureAnalyzer - Type Mismatch Tests', () => {
 			]
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const typeMismatches = diagnostics.filter(d => d.code === DiagnosticCode.PARAM_TYPE_MISMATCH);
 
 		assert.strictEqual(typeMismatches.length, 1, 'Should detect exactly one mismatch');
@@ -200,7 +201,7 @@ suite('PythonSignatureAnalyzer - Optional/Required Mismatch Tests', () => {
 			parameters: [createTestDocstringParameter('age', 'int', 'Age', false)]
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const optionalMismatch = diagnostics.filter(d => d.code === DiagnosticCode.PARAM_OPTIONAL_MISMATCH);
 
 		assert.strictEqual(optionalMismatch.length, 1, 'Should detect optional mismatch');
@@ -218,7 +219,7 @@ suite('PythonSignatureAnalyzer - Optional/Required Mismatch Tests', () => {
 			parameters: [createTestDocstringParameter('age', 'int', 'Age', true)]
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const optionalMismatch = diagnostics.filter(d => d.code === DiagnosticCode.PARAM_OPTIONAL_MISMATCH);
 
 		assert.strictEqual(optionalMismatch.length, 1, 'Should detect optional mismatch');
@@ -235,7 +236,7 @@ suite('PythonSignatureAnalyzer - Optional/Required Mismatch Tests', () => {
 			parameters: [createTestDocstringParameter('age', 'int', 'Age', true)]
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const optionalMismatch = diagnostics.filter(d => d.code === DiagnosticCode.PARAM_OPTIONAL_MISMATCH);
 
 		assert.strictEqual(optionalMismatch.length, 0, 'Should not report when both are optional');
@@ -250,7 +251,7 @@ suite('PythonSignatureAnalyzer - Optional/Required Mismatch Tests', () => {
 			parameters: [createTestDocstringParameter('age', 'int', 'Age', false)]
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const optionalMismatch = diagnostics.filter(d => d.code === DiagnosticCode.PARAM_OPTIONAL_MISMATCH);
 
 		assert.strictEqual(optionalMismatch.length, 0, 'Should not report when both are required');
@@ -281,7 +282,7 @@ suite('PythonSignatureAnalyzer - Optional/Required Mismatch Tests', () => {
 				parameters: [createTestDocstringParameter('param', 'int', 'Param', testCase.docOptional)]
 			});
 
-			const diagnostics = analyzer.analyze(func, docstring);
+			const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 			const optionalMismatch = diagnostics.filter(d => d.code === DiagnosticCode.PARAM_OPTIONAL_MISMATCH);
 
 			assert.strictEqual(optionalMismatch.length, 0, `Should not report when ${testCase.name}`);
@@ -297,7 +298,7 @@ suite('PythonSignatureAnalyzer - Optional/Required Mismatch Tests', () => {
 			parameters: [createTestDocstringParameter('age', 'int', 'Age')]  // isOptional is undefined
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const optionalMismatch = diagnostics.filter(d => d.code === DiagnosticCode.PARAM_OPTIONAL_MISMATCH);
 
 		assert.strictEqual(optionalMismatch.length, 0, 'Should not report when docstring does not specify optionality');
@@ -312,7 +313,7 @@ suite('PythonSignatureAnalyzer - Optional/Required Mismatch Tests', () => {
 			parameters: [createTestDocstringParameter('name', 'str', 'Name')]  // isOptional is undefined
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const optionalMismatch = diagnostics.filter(d => d.code === DiagnosticCode.PARAM_OPTIONAL_MISMATCH);
 
 		assert.strictEqual(optionalMismatch.length, 0, 'Should not report when docstring does not specify optionality for required param');
@@ -335,7 +336,7 @@ suite('PythonSignatureAnalyzer - Optional/Required Mismatch Tests', () => {
 			]
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const optionalMismatches = diagnostics.filter(d => d.code === DiagnosticCode.PARAM_OPTIONAL_MISMATCH);
 
 		assert.strictEqual(optionalMismatches.length, 1, 'Should detect exactly one mismatch');
@@ -357,7 +358,7 @@ suite('PythonSignatureAnalyzer - Optional/Required Mismatch Tests', () => {
 			]
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const optionalMismatch = diagnostics.filter(d => d.code === DiagnosticCode.PARAM_OPTIONAL_MISMATCH);
 
 		assert.strictEqual(optionalMismatch.length, 1, 'Should only report for age, not self');

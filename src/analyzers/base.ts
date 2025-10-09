@@ -15,7 +15,12 @@ export interface IAnalyzer {
 	 * Analyze a function and its docstring for mismatches
 	 * @param func Function descriptor from code parser
 	 * @param docstring Parsed docstring descriptor
+	 * @param documentUri URI of the document being analyzed (for related information)
 	 * @returns Array of diagnostics for found issues
 	 */
-	analyze(func: FunctionDescriptor, docstring: DocstringDescriptor): vscode.Diagnostic[];
+	analyze(
+		func: FunctionDescriptor,
+		docstring: DocstringDescriptor,
+		documentUri: vscode.Uri
+	): vscode.Diagnostic[];
 }

@@ -4,7 +4,8 @@ import { PythonExceptionAnalyzer } from '../../../analyzers/python/exceptionAnal
 import { DiagnosticCode } from '../../../diagnostics/types';
 import {
 	createTestFunction,
-	createTestDocstring
+	createTestDocstring,
+	TEST_URI
 } from './testUtils';
 
 suite('PythonExceptionAnalyzer - Exception Validation Tests', () => {
@@ -23,7 +24,7 @@ suite('PythonExceptionAnalyzer - Exception Validation Tests', () => {
 				raises: [] // No exceptions documented
 			});
 
-			const diagnostics = analyzer.analyze(func, docstring);
+			const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 			const undocumented = diagnostics.find(d => d.code === DiagnosticCode.EXCEPTION_UNDOCUMENTED);
 
 			assert.ok(undocumented, 'Should detect undocumented ValueError');
@@ -43,7 +44,7 @@ suite('PythonExceptionAnalyzer - Exception Validation Tests', () => {
 				raises: [] // No exceptions documented
 			});
 
-			const diagnostics = analyzer.analyze(func, docstring);
+			const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 			const undocumented = diagnostics.filter(d => d.code === DiagnosticCode.EXCEPTION_UNDOCUMENTED);
 
 			assert.strictEqual(undocumented.length, 3, 'Should detect all 3 undocumented exceptions');
@@ -60,7 +61,7 @@ suite('PythonExceptionAnalyzer - Exception Validation Tests', () => {
 				raises: [{ type: 'ValueError', description: 'Invalid value' }]
 			});
 
-			const diagnostics = analyzer.analyze(func, docstring);
+			const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 			const undocumented = diagnostics.filter(d => d.code === DiagnosticCode.EXCEPTION_UNDOCUMENTED);
 
 			assert.strictEqual(undocumented.length, 1, 'Should detect only TypeError as undocumented');
@@ -81,7 +82,7 @@ suite('PythonExceptionAnalyzer - Exception Validation Tests', () => {
 				]
 			});
 
-			const diagnostics = analyzer.analyze(func, docstring);
+			const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 			const undocumented = diagnostics.filter(d => d.code === DiagnosticCode.EXCEPTION_UNDOCUMENTED);
 
 			assert.strictEqual(undocumented.length, 0, 'Should not report when all exceptions documented');
@@ -95,7 +96,7 @@ suite('PythonExceptionAnalyzer - Exception Validation Tests', () => {
 				raises: [{ type: 'valueerror', description: 'Invalid value' }]
 			});
 
-			const diagnostics = analyzer.analyze(func, docstring);
+			const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 			const undocumented = diagnostics.filter(d => d.code === DiagnosticCode.EXCEPTION_UNDOCUMENTED);
 
 			assert.strictEqual(undocumented.length, 0, 'Should match ValueError and valueerror');
@@ -109,7 +110,7 @@ suite('PythonExceptionAnalyzer - Exception Validation Tests', () => {
 				raises: [{ type: 'ValueError', description: 'Invalid value' }]
 			});
 
-			const diagnostics = analyzer.analyze(func, docstring);
+			const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 			const undocumented = diagnostics.filter(d => d.code === DiagnosticCode.EXCEPTION_UNDOCUMENTED);
 
 			assert.strictEqual(undocumented.length, 0, 'Should match builtins.ValueError with ValueError');
@@ -125,7 +126,7 @@ suite('PythonExceptionAnalyzer - Exception Validation Tests', () => {
 				raises: [{ type: 'ValueError', description: 'Invalid value' }]
 			});
 
-			const diagnostics = analyzer.analyze(func, docstring);
+			const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 			const notRaised = diagnostics.find(d => d.code === DiagnosticCode.EXCEPTION_NOT_RAISED);
 
 			assert.ok(notRaised, 'Should detect documented but not raised ValueError');
@@ -145,7 +146,7 @@ suite('PythonExceptionAnalyzer - Exception Validation Tests', () => {
 				]
 			});
 
-			const diagnostics = analyzer.analyze(func, docstring);
+			const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 			const notRaised = diagnostics.filter(d => d.code === DiagnosticCode.EXCEPTION_NOT_RAISED);
 
 			assert.strictEqual(notRaised.length, 3, 'Should detect all 3 documented but not raised exceptions');
@@ -162,7 +163,7 @@ suite('PythonExceptionAnalyzer - Exception Validation Tests', () => {
 				]
 			});
 
-			const diagnostics = analyzer.analyze(func, docstring);
+			const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 			const notRaised = diagnostics.filter(d => d.code === DiagnosticCode.EXCEPTION_NOT_RAISED);
 
 			assert.strictEqual(notRaised.length, 1, 'Should detect only TypeError as not raised');
@@ -183,7 +184,7 @@ suite('PythonExceptionAnalyzer - Exception Validation Tests', () => {
 				]
 			});
 
-			const diagnostics = analyzer.analyze(func, docstring);
+			const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 			const notRaised = diagnostics.filter(d => d.code === DiagnosticCode.EXCEPTION_NOT_RAISED);
 
 			assert.strictEqual(notRaised.length, 0, 'Should not report when all documented exceptions are raised');
@@ -197,7 +198,7 @@ suite('PythonExceptionAnalyzer - Exception Validation Tests', () => {
 				raises: [] // No exceptions documented
 			});
 
-			const diagnostics = analyzer.analyze(func, docstring);
+			const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 			const notRaised = diagnostics.filter(d => d.code === DiagnosticCode.EXCEPTION_NOT_RAISED);
 
 			assert.strictEqual(notRaised.length, 0, 'Should not report DSV302 when no exceptions documented');
@@ -215,7 +216,7 @@ suite('PythonExceptionAnalyzer - Exception Validation Tests', () => {
 				raises: []
 			});
 
-			const diagnostics = analyzer.analyze(func, docstring);
+			const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 
 			assert.strictEqual(diagnostics.length, 0, 'Should skip analysis when no docstring');
 		});
@@ -228,7 +229,7 @@ suite('PythonExceptionAnalyzer - Exception Validation Tests', () => {
 				raises: []
 			});
 
-			const diagnostics = analyzer.analyze(func, docstring);
+			const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 
 			assert.strictEqual(diagnostics.length, 0, 'Should handle no exceptions gracefully');
 		});
@@ -241,7 +242,7 @@ suite('PythonExceptionAnalyzer - Exception Validation Tests', () => {
 				raises: [{ type: 'CustomError', description: 'Custom error occurred' }]
 			});
 
-			const diagnostics = analyzer.analyze(func, docstring);
+			const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 
 			assert.strictEqual(diagnostics.length, 0, 'Should handle custom exceptions');
 		});
@@ -260,7 +261,7 @@ suite('PythonExceptionAnalyzer - Exception Validation Tests', () => {
 				]
 			});
 
-			const diagnostics = analyzer.analyze(func, docstring);
+			const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 			const undocumented = diagnostics.filter(d => d.code === DiagnosticCode.EXCEPTION_UNDOCUMENTED);
 			const notRaised = diagnostics.filter(d => d.code === DiagnosticCode.EXCEPTION_NOT_RAISED);
 

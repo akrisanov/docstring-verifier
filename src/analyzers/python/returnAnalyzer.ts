@@ -30,8 +30,16 @@ export class PythonReturnAnalyzer implements IAnalyzer {
 
 	/**
 	 * Analyze function return type against docstring
+	 *
+	 * @param func Function descriptor from code parser
+	 * @param docstring Parsed docstring descriptor
+	 * @param documentUri URI of the document being analyzed
 	 */
-	analyze(func: FunctionDescriptor, docstring: DocstringDescriptor): vscode.Diagnostic[] {
+	analyze(
+		func: FunctionDescriptor,
+		docstring: DocstringDescriptor,
+		documentUri: vscode.Uri
+	): vscode.Diagnostic[] {
 		const diagnostics: vscode.Diagnostic[] = [];
 		const range = func.docstringRange || func.range;
 
@@ -45,7 +53,7 @@ export class PythonReturnAnalyzer implements IAnalyzer {
 		diagnostics.push(...this.checkReturnTypeMismatch(func, docstring, range));
 
 		// Check for missing return in docstring (DSV202)
-		diagnostics.push(...this.checkReturnMissingInDocstring(func, docstring, range));
+		diagnostics.push(...this.checkReturnMissingInDocstring(func, docstring, range, documentUri));
 
 		// Check for documented return but void function (DSV203)
 		diagnostics.push(...this.checkReturnDocumentedButVoid(func, docstring, range));
@@ -193,7 +201,8 @@ export class PythonReturnAnalyzer implements IAnalyzer {
 	private checkReturnMissingInDocstring(
 		func: FunctionDescriptor,
 		docstring: DocstringDescriptor,
-		range: vscode.Range
+		range: vscode.Range,
+		documentUri: vscode.Uri
 	): vscode.Diagnostic[] {
 		const diagnostics: vscode.Diagnostic[] = [];
 
@@ -207,11 +216,15 @@ export class PythonReturnAnalyzer implements IAnalyzer {
 			return diagnostics;
 		}
 
+		// Create location pointing to the function signature (where return type is defined)
+		const returnTypeLocation = new vscode.Location(documentUri, func.range);
+
 		// Function has a return type but no Returns section in docstring
 		const diagnostic = DiagnosticFactory.createReturnMissingInDocstring(
 			func.name,
 			func.returnType,
-			range
+			range,
+			returnTypeLocation
 		);
 		diagnostics.push(diagnostic);
 

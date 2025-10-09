@@ -109,16 +109,14 @@
 - [ ] Side Effects Analyzer
   - DSV401: Detect file I/O, print, global modifications
   - Heuristic-based detection
-- [ ] Better Error Messages
-  - More descriptive diagnostic messages
-  - Add related information for diagnostics
+- [x] Better Error Messages
+  - [x] More descriptive diagnostic messages with actionable hints
+  - [x] Add related information for diagnostics (DSV102, DSV301)
 - [ ] Settings
   - `docstringVerifier.enable`
   - `docstringVerifier.logLevel`
   - `docstringVerifier.pythonPath`
   - `docstringVerifier.docstringStyle`
-
-**Milestone:** Polished Python support with 2 docstring formats and 4 validation rules
 
 ### TypeScript Support
 

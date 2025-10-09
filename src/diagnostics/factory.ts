@@ -32,15 +32,26 @@ export class DiagnosticFactory {
 	static createParamMissingInDocstring(
 		paramName: string,
 		functionName: string,
-		range: vscode.Range
+		range: vscode.Range,
+		parameterLocation?: vscode.Location
 	): vscode.Diagnostic {
 		const diagnostic = new vscode.Diagnostic(
 			range,
-			`Parameter '${paramName}' is missing in docstring for function '${functionName}'`,
+			`Parameter '${paramName}' is missing in docstring. Add it to the Args section.`,
 			vscode.DiagnosticSeverity.Warning
 		);
 		diagnostic.code = DiagnosticCode.PARAM_MISSING_IN_DOCSTRING;
 		diagnostic.source = DiagnosticFactory.SOURCE;
+
+		if (parameterLocation) {
+			diagnostic.relatedInformation = [
+				new vscode.DiagnosticRelatedInformation(
+					parameterLocation,
+					`Parameter '${paramName}' is defined here in function signature`
+				)
+			];
+		}
+
 		return diagnostic;
 	}
 
@@ -54,7 +65,7 @@ export class DiagnosticFactory {
 	): vscode.Diagnostic {
 		const diagnostic = new vscode.Diagnostic(
 			range,
-			`Parameter '${paramName}' is documented but not found in function '${functionName}'`,
+			`Parameter '${paramName}' is documented but not found in function '${functionName}'. Remove it from docstring or add to function signature.`,
 			vscode.DiagnosticSeverity.Warning
 		);
 		diagnostic.code = DiagnosticCode.PARAM_MISSING_IN_CODE;
@@ -76,7 +87,7 @@ export class DiagnosticFactory {
 		const docTypeStr = docType || 'no type';
 		const diagnostic = new vscode.Diagnostic(
 			range,
-			`Parameter '${paramName}' type mismatch in function '${functionName}': code has '${codeTypeStr}', docstring has '${docTypeStr}'`,
+			`Parameter '${paramName}' type mismatch: code has '${codeTypeStr}', docstring has '${docTypeStr}'. Update docstring to match code.`,
 			vscode.DiagnosticSeverity.Warning
 		);
 		diagnostic.code = DiagnosticCode.PARAM_TYPE_MISMATCH;
@@ -116,7 +127,7 @@ export class DiagnosticFactory {
 	): vscode.Diagnostic {
 		const diagnostic = new vscode.Diagnostic(
 			range,
-			`Return type mismatch in function '${functionName}': code has '${codeType}', docstring has '${docType}'`,
+			`Return type mismatch: code returns '${codeType}', docstring documents '${docType}'. Update Returns section to match code.`,
 			vscode.DiagnosticSeverity.Warning
 		);
 		diagnostic.code = DiagnosticCode.RETURN_TYPE_MISMATCH;
@@ -130,15 +141,26 @@ export class DiagnosticFactory {
 	static createReturnMissingInDocstring(
 		functionName: string,
 		returnType: string,
-		range: vscode.Range
+		range: vscode.Range,
+		returnTypeLocation?: vscode.Location
 	): vscode.Diagnostic {
 		const diagnostic = new vscode.Diagnostic(
 			range,
-			`Function '${functionName}' returns '${returnType}' but return is not documented in docstring`,
+			`Function returns '${returnType}' but return is not documented. Add Returns section to docstring.`,
 			vscode.DiagnosticSeverity.Warning
 		);
 		diagnostic.code = DiagnosticCode.RETURN_MISSING_IN_DOCSTRING;
 		diagnostic.source = DiagnosticFactory.SOURCE;
+
+		if (returnTypeLocation) {
+			diagnostic.relatedInformation = [
+				new vscode.DiagnosticRelatedInformation(
+					returnTypeLocation,
+					`Function '${functionName}' has return type: ${returnType}`
+				)
+			];
+		}
+
 		return diagnostic;
 	}
 
@@ -153,7 +175,7 @@ export class DiagnosticFactory {
 		const typeStr = docReturnType ? ` ('${docReturnType}')` : '';
 		const diagnostic = new vscode.Diagnostic(
 			range,
-			`Function '${functionName}' is void but docstring documents a return${typeStr}`,
+			`Function is void (no return) but docstring documents a return${typeStr}. Remove Returns section from docstring.`,
 			vscode.DiagnosticSeverity.Warning
 		);
 		diagnostic.code = DiagnosticCode.RETURN_DOCUMENTED_BUT_VOID;
@@ -203,15 +225,26 @@ export class DiagnosticFactory {
 	static createExceptionNotDocumented(
 		exceptionType: string,
 		functionName: string,
-		range: vscode.Range
+		range: vscode.Range,
+		raiseLocation?: vscode.Location
 	): vscode.Diagnostic {
 		const diagnostic = new vscode.Diagnostic(
 			range,
-			`Exception '${exceptionType}' is raised in function '${functionName}' but not documented in docstring`,
+			`Exception '${exceptionType}' is raised but not documented. Add it to the Raises section.`,
 			vscode.DiagnosticSeverity.Warning
 		);
 		diagnostic.code = DiagnosticCode.EXCEPTION_UNDOCUMENTED;
 		diagnostic.source = DiagnosticFactory.SOURCE;
+
+		if (raiseLocation) {
+			diagnostic.relatedInformation = [
+				new vscode.DiagnosticRelatedInformation(
+					raiseLocation,
+					`'${exceptionType}' is raised here`
+				)
+			];
+		}
+
 		return diagnostic;
 	}
 
@@ -225,7 +258,7 @@ export class DiagnosticFactory {
 	): vscode.Diagnostic {
 		const diagnostic = new vscode.Diagnostic(
 			range,
-			`Exception '${exceptionType}' is documented but not raised in function '${functionName}'`,
+			`Exception '${exceptionType}' is documented but not raised. Remove it from Raises section or add raise statement.`,
 			vscode.DiagnosticSeverity.Information
 		);
 		diagnostic.code = DiagnosticCode.EXCEPTION_NOT_RAISED;

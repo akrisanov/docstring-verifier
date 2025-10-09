@@ -4,7 +4,8 @@ import { PythonReturnAnalyzer } from '../../../analyzers/python/returnAnalyzer';
 import { DiagnosticCode } from '../../../diagnostics/types';
 import {
 	createTestFunction,
-	createTestDocstring
+	createTestDocstring,
+	TEST_URI
 } from './testUtils';
 
 suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
@@ -21,7 +22,7 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 			returnDescription: 'User information'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const typeMismatch = diagnostics.find(d => d.code === DiagnosticCode.RETURN_TYPE_MISMATCH);
 
 		assert.ok(typeMismatch, 'Should detect return type mismatch');
@@ -37,7 +38,7 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 			returnDescription: 'User information'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const typeMismatch = diagnostics.find(d => d.code === DiagnosticCode.RETURN_TYPE_MISMATCH);
 
 		assert.strictEqual(typeMismatch, undefined, 'Should not report when types match');
@@ -58,7 +59,7 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 				returnDescription: 'Result'
 			});
 
-			const diagnostics = analyzer.analyze(func, docstring);
+			const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 			const typeMismatch = diagnostics.find(d => d.code === DiagnosticCode.RETURN_TYPE_MISMATCH);
 
 			assert.strictEqual(
@@ -76,7 +77,7 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 			returnDescription: 'Value'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const typeMismatch = diagnostics.find(d => d.code === DiagnosticCode.RETURN_TYPE_MISMATCH);
 
 		assert.strictEqual(typeMismatch, undefined, 'Should normalize Optional[int] to int|none');
@@ -89,7 +90,7 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 			returnDescription: 'Result'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const typeMismatch = diagnostics.find(d => d.code === DiagnosticCode.RETURN_TYPE_MISMATCH);
 
 		assert.strictEqual(typeMismatch, undefined, 'Should be case-insensitive');
@@ -102,7 +103,7 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 			returnDescription: 'Result'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const typeMismatch = diagnostics.filter(d => d.code === DiagnosticCode.RETURN_TYPE_MISMATCH);
 
 		assert.strictEqual(typeMismatch.length, 0, 'Should not check when code has no return type');
@@ -115,7 +116,7 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 			returnDescription: 'Result'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const typeMismatch = diagnostics.filter(d => d.code === DiagnosticCode.RETURN_TYPE_MISMATCH);
 
 		assert.strictEqual(typeMismatch.length, 0, 'Should not check when docstring has no return type');
@@ -128,7 +129,7 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 			returnDescription: 'List of numbers'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const typeMismatch = diagnostics.find(d => d.code === DiagnosticCode.RETURN_TYPE_MISMATCH);
 
 		assert.strictEqual(typeMismatch, undefined, 'Should handle complex types');
@@ -141,7 +142,7 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 			returnDescription: 'List of strings'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const typeMismatch = diagnostics.find(d => d.code === DiagnosticCode.RETURN_TYPE_MISMATCH);
 
 		assert.ok(typeMismatch, 'Should detect mismatch in complex types');
@@ -163,7 +164,7 @@ suite('PythonReturnAnalyzer - Missing Return in Docstring Tests', () => {
 			parameters: []  // No returns section
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const missingReturn = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MISSING_IN_DOCSTRING);
 
 		assert.ok(missingReturn, 'Should detect missing return in docstring');
@@ -178,7 +179,7 @@ suite('PythonReturnAnalyzer - Missing Return in Docstring Tests', () => {
 			parameters: []  // No returns section
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const missingReturn = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MISSING_IN_DOCSTRING);
 
 		assert.strictEqual(missingReturn, undefined, 'Should not report for None return type');
@@ -190,7 +191,7 @@ suite('PythonReturnAnalyzer - Missing Return in Docstring Tests', () => {
 			parameters: []  // No returns section
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const missingReturn = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MISSING_IN_DOCSTRING);
 
 		assert.strictEqual(missingReturn, undefined, 'Should not report when no return type');
@@ -203,7 +204,7 @@ suite('PythonReturnAnalyzer - Missing Return in Docstring Tests', () => {
 			returnDescription: 'User data'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const missingReturn = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MISSING_IN_DOCSTRING);
 
 		assert.strictEqual(missingReturn, undefined, 'Should not report when returns section exists');
@@ -218,7 +219,7 @@ suite('PythonReturnAnalyzer - Missing Return in Docstring Tests', () => {
 				parameters: []
 			});
 
-			const diagnostics = analyzer.analyze(func, docstring);
+			const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 			const missingReturn = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MISSING_IN_DOCSTRING);
 
 			assert.strictEqual(
@@ -237,7 +238,7 @@ suite('PythonReturnAnalyzer - Missing Return in Docstring Tests', () => {
 			returnDescription: 'Data'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 
 		// Should have DSV201 (type mismatch) but NOT DSV202 (missing return)
 		const typeMismatch = diagnostics.find(d => d.code === DiagnosticCode.RETURN_TYPE_MISMATCH);
@@ -254,7 +255,7 @@ suite('PythonReturnAnalyzer - Missing Return in Docstring Tests', () => {
 			returnDescription: 'Some data'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const missingReturn = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MISSING_IN_DOCSTRING);
 
 		assert.strictEqual(missingReturn, undefined, 'Should not report when returns section exists');
@@ -275,7 +276,7 @@ suite('PythonReturnAnalyzer - Edge Cases and Interaction Tests', () => {
 			returnDescription: 'Some data'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const typeMismatch = diagnostics.find(d => d.code === DiagnosticCode.RETURN_TYPE_MISMATCH);
 		const missingReturn = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MISSING_IN_DOCSTRING);
 
@@ -291,7 +292,7 @@ suite('PythonReturnAnalyzer - Edge Cases and Interaction Tests', () => {
 			returnDescription: 'Some data'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const voidMismatch = diagnostics.find(d => d.code === DiagnosticCode.RETURN_DOCUMENTED_BUT_VOID);
 
 		// DSV203 should trigger
@@ -305,7 +306,7 @@ suite('PythonReturnAnalyzer - Edge Cases and Interaction Tests', () => {
 			parameters: []  // No returns section
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const missingReturn = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MISSING_IN_DOCSTRING);
 
 		assert.ok(missingReturn, 'Should report missing return for Optional[None]');
@@ -318,7 +319,7 @@ suite('PythonReturnAnalyzer - Edge Cases and Interaction Tests', () => {
 			parameters: []  // No returns section
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const missingReturn = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MISSING_IN_DOCSTRING);
 
 		assert.ok(missingReturn, 'Should report missing return for str | None');
@@ -340,7 +341,7 @@ suite('PythonReturnAnalyzer - Documented Return But Void Function Tests', () => 
 			returnDescription: 'User data'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const voidMismatch = diagnostics.find(d => d.code === DiagnosticCode.RETURN_DOCUMENTED_BUT_VOID);
 
 		assert.ok(voidMismatch, 'Should detect documented return for void function');
@@ -356,7 +357,7 @@ suite('PythonReturnAnalyzer - Documented Return But Void Function Tests', () => 
 			returnDescription: 'Result'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const voidMismatch = diagnostics.find(d => d.code === DiagnosticCode.RETURN_DOCUMENTED_BUT_VOID);
 
 		assert.ok(voidMismatch, 'Should detect documented return for None function');
@@ -374,7 +375,7 @@ suite('PythonReturnAnalyzer - Documented Return But Void Function Tests', () => 
 				returnDescription: 'Data'
 			});
 
-			const diagnostics = analyzer.analyze(func, docstring);
+			const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 			const voidMismatch = diagnostics.find(d => d.code === DiagnosticCode.RETURN_DOCUMENTED_BUT_VOID);
 
 			assert.ok(
@@ -391,7 +392,7 @@ suite('PythonReturnAnalyzer - Documented Return But Void Function Tests', () => 
 			returnDescription: 'Data'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const voidMismatch = diagnostics.find(d => d.code === DiagnosticCode.RETURN_DOCUMENTED_BUT_VOID);
 
 		assert.strictEqual(voidMismatch, undefined, 'Should not report when function has return type');
@@ -403,7 +404,7 @@ suite('PythonReturnAnalyzer - Documented Return But Void Function Tests', () => 
 			parameters: []  // No returns section
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const voidMismatch = diagnostics.find(d => d.code === DiagnosticCode.RETURN_DOCUMENTED_BUT_VOID);
 
 		assert.strictEqual(voidMismatch, undefined, 'Should not report when no returns section');
@@ -416,7 +417,7 @@ suite('PythonReturnAnalyzer - Documented Return But Void Function Tests', () => 
 			returnDescription: 'Some result'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const voidMismatch = diagnostics.find(d => d.code === DiagnosticCode.RETURN_DOCUMENTED_BUT_VOID);
 
 		assert.ok(voidMismatch, 'Should report even when return type is not specified');
@@ -431,7 +432,7 @@ suite('PythonReturnAnalyzer - Documented Return But Void Function Tests', () => 
 			returnDescription: 'Data'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const typeMismatch = diagnostics.find(d => d.code === DiagnosticCode.RETURN_TYPE_MISMATCH);
 		const missingReturn = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MISSING_IN_DOCSTRING);
 		const voidMismatch = diagnostics.find(d => d.code === DiagnosticCode.RETURN_DOCUMENTED_BUT_VOID);
@@ -453,7 +454,7 @@ suite('PythonReturnAnalyzer - Documented Return But Void Function Tests', () => 
 				returnDescription: 'Result'
 			});
 
-			const diagnostics = analyzer.analyze(func, docstring);
+			const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 			const voidMismatch = diagnostics.find(d => d.code === DiagnosticCode.RETURN_DOCUMENTED_BUT_VOID);
 
 			assert.strictEqual(
@@ -486,7 +487,7 @@ suite('PythonReturnAnalyzer - Multiple Returns and Generators Tests', () => {
 			returnDescription: 'Result'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const inconsistent = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MULTIPLE_INCONSISTENT);
 
 		assert.ok(inconsistent, 'Should detect multiple inconsistent return types');
@@ -510,7 +511,7 @@ suite('PythonReturnAnalyzer - Multiple Returns and Generators Tests', () => {
 			returnDescription: 'Result'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const inconsistent = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MULTIPLE_INCONSISTENT);
 
 		assert.strictEqual(inconsistent, undefined, 'Should not report when all types are the same');
@@ -530,7 +531,7 @@ suite('PythonReturnAnalyzer - Multiple Returns and Generators Tests', () => {
 			returnDescription: 'Result'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const inconsistent = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MULTIPLE_INCONSISTENT);
 
 		assert.strictEqual(inconsistent, undefined, 'Should normalize types before comparison');
@@ -548,7 +549,7 @@ suite('PythonReturnAnalyzer - Multiple Returns and Generators Tests', () => {
 			returnDescription: 'Result'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const inconsistent = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MULTIPLE_INCONSISTENT);
 
 		assert.strictEqual(inconsistent, undefined, 'Should not check with less than 2 returns');
@@ -571,7 +572,7 @@ suite('PythonReturnAnalyzer - Multiple Returns and Generators Tests', () => {
 			returnDescription: 'Yields values'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const inconsistent = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MULTIPLE_INCONSISTENT);
 
 		assert.strictEqual(inconsistent, undefined, 'Should skip for generators');
@@ -590,7 +591,7 @@ suite('PythonReturnAnalyzer - Multiple Returns and Generators Tests', () => {
 			returnDescription: 'Yields values'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const generatorIssue = diagnostics.find(d => d.code === DiagnosticCode.GENERATOR_SHOULD_YIELD);
 
 		assert.ok(generatorIssue, 'Should detect generator with Returns section');
@@ -611,7 +612,7 @@ suite('PythonReturnAnalyzer - Multiple Returns and Generators Tests', () => {
 			parameters: []  // No returns section
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const generatorIssue = diagnostics.find(d => d.code === DiagnosticCode.GENERATOR_SHOULD_YIELD);
 
 		assert.strictEqual(generatorIssue, undefined, 'Should not report when no Returns section');
@@ -630,7 +631,7 @@ suite('PythonReturnAnalyzer - Multiple Returns and Generators Tests', () => {
 			returnDescription: 'List of values'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const generatorIssue = diagnostics.find(d => d.code === DiagnosticCode.GENERATOR_SHOULD_YIELD);
 
 		assert.strictEqual(generatorIssue, undefined, 'Should not report for non-generators');
@@ -654,7 +655,7 @@ suite('PythonReturnAnalyzer - Multiple Returns and Generators Tests', () => {
 			returnDescription: 'Values'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const generatorIssue = diagnostics.find(d => d.code === DiagnosticCode.GENERATOR_SHOULD_YIELD);
 		const inconsistent = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MULTIPLE_INCONSISTENT);
 
@@ -676,7 +677,7 @@ suite('PythonReturnAnalyzer - Multiple Returns and Generators Tests', () => {
 			returnDescription: 'Result'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const inconsistent = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MULTIPLE_INCONSISTENT);
 
 		assert.ok(inconsistent, 'Should detect None mixed with str and int');
@@ -699,7 +700,7 @@ suite('PythonReturnAnalyzer - Multiple Returns and Generators Tests', () => {
 			returnDescription: 'Result'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const inconsistent = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MULTIPLE_INCONSISTENT);
 
 		// Should not crash and should not report (only known types are str)
@@ -720,7 +721,7 @@ suite('PythonReturnAnalyzer - Multiple Returns and Generators Tests', () => {
 			returnDescription: 'Async values'
 		});
 
-		const diagnostics = analyzer.analyze(func, docstring);
+		const diagnostics = analyzer.analyze(func, docstring, TEST_URI);
 		const generatorIssue = diagnostics.find(d => d.code === DiagnosticCode.GENERATOR_SHOULD_YIELD);
 
 		assert.ok(generatorIssue, 'Should detect async generator with Returns');
