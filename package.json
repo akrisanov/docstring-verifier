@@ -61,6 +61,16 @@
 					"type": "boolean",
 					"default": true,
 					"description": "Prefer uv for running Python scripts (faster, more reliable)"
+				},
+				"docstringVerifier.docstringStyle": {
+					"type": "string",
+					"enum": [
+						"auto",
+						"google",
+						"sphinx"
+					],
+					"default": "auto",
+					"description": "Docstring style to use for validation and generation (auto = detect automatically)"
 				}
 			}
 		}

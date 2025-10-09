@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as https from 'https';
 import { Logger } from '../../utils/logger';
+import { getConfig } from '../../utils/config';
 
 /**
  * Result of executing Python script
@@ -19,10 +20,6 @@ export interface PythonExecutionResult {
  * Configuration for Python execution
  */
 export interface PythonExecutorConfig {
-	/** Prefer using uv if available */
-	preferUv?: boolean;
-	/** Custom Python path (overrides auto-detection) */
-	pythonPath?: string;
 	/** Timeout in milliseconds */
 	timeout?: number;
 	/** Working directory */
@@ -104,21 +101,27 @@ export class PythonExecutor {
 	/**
 	 * Detect and cache the Python command to use.
 	 * Priority: bundled uv → system uv → Python Extension API → system python3
+	 *
+	 * Note: Reads configuration dynamically on each call to respect setting changes.
+	 * The command is cached after first detection, call resetCommand() to re-detect.
 	 */
 	private async detectPythonCommand(): Promise<string[]> {
 		if (this.pythonCommand) {
 			return this.pythonCommand;
 		}
 
+		// Read configuration dynamically to respect setting changes
+		const config = getConfig();
+
 		// 1. Use custom pythonPath if provided
-		if (this.config.pythonPath) {
-			this.logger.info(`Using custom Python path: ${this.config.pythonPath}`);
-			this.pythonCommand = [this.config.pythonPath];
+		if (config.pythonPath) {
+			this.logger.info(`Using custom Python path: ${config.pythonPath}`);
+			this.pythonCommand = [config.pythonPath];
 			return this.pythonCommand;
 		}
 
 		// 2. Try bundled uv (lazy download if needed)
-		if (this.config.preferUv !== false) {
+		if (config.preferUv !== false) {
 			const bundledUvPath = await this.getBundledUvPath();
 			if (bundledUvPath) {
 				this.logger.info('Using bundled uv for Python execution');
@@ -128,7 +131,7 @@ export class PythonExecutor {
 		}
 
 		// 3. Try system uv
-		if (this.config.preferUv !== false) {
+		if (config.preferUv !== false) {
 			const uvAvailable = await this.isCommandAvailable('uv');
 			if (uvAvailable) {
 				this.logger.info('Using system uv for Python execution');

@@ -5,6 +5,7 @@ import { IParser } from '../base';
 import { FunctionDescriptor } from '../types';
 import { PythonExecutor } from './pythonExecutor';
 import { Logger } from '../../utils/logger';
+import { getConfig } from '../../utils/config';
 
 /**
  * Parser for Python files using the Python AST extractor.
@@ -20,12 +21,24 @@ export class PythonParser implements IParser {
 
 	constructor(context: vscode.ExtensionContext) {
 		this.logger = new Logger('Docstring Verifier - Python Parser');
+
+		// Create executor without passing preferUv/pythonPath
+		// It will read configuration dynamically on each execution
 		this.executor = new PythonExecutor(context);
 
 		// Construct path to ast_extractor.py
-		this.astExtractorPath = context.asAbsolutePath(
-			path.join('tools', 'python', 'ast_extractor.py')
-		);
+		// Allow custom path from settings (for development)
+		// Note: This path is read once at initialization since it's a development setting
+		// and changing it requires reloading the extension anyway
+		const config = getConfig();
+		if (config.pythonScriptPath) {
+			this.astExtractorPath = config.pythonScriptPath;
+			this.logger.info(`Using custom AST extractor path: ${this.astExtractorPath}`);
+		} else {
+			this.astExtractorPath = context.asAbsolutePath(
+				path.join('tools', 'python', 'ast_extractor.py')
+			);
+		}
 
 		this.logger.info('Python Parser initialized');
 		this.logger.debug(`AST Extractor path: ${this.astExtractorPath}`);
@@ -173,6 +186,14 @@ export class PythonParser implements IParser {
 		));
 
 		return new vscode.Range(startLine, startChar, endLine, endChar);
+	}
+
+	/**
+	 * Reset Python executor cache.
+	 * Call this when Python settings change to re-detect Python command.
+	 */
+	resetExecutor(): void {
+		this.executor.resetCommand();
 	}
 }
 

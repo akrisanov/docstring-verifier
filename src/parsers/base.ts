@@ -12,4 +12,10 @@ export interface IParser {
      * @returns Array of function descriptors found in the document
      */
     parse(document: vscode.TextDocument): Promise<FunctionDescriptor[]>;
+
+    /**
+     * Reset internal caches (e.g., Python executor command cache).
+     * Optional method - parsers that don't cache can use default no-op implementation.
+     */
+    resetExecutor?(): void;
 }

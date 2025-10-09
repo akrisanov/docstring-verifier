@@ -2,8 +2,8 @@
 
 ## Current Status
 
-**Day 1:** ✅ Complete  
-**Day 2:** ✅ Complete  
+**Day 1:** ✅ Complete
+**Day 2:** ✅ Complete
 **Day 3:** ✅ Complete
 
 ## Day 1: Entry Point + End-to-End Skeleton
@@ -111,12 +111,18 @@
   - Heuristic-based detection
 - [x] Better Error Messages
   - [x] More descriptive diagnostic messages with actionable hints
-  - [x] Add related information for diagnostics (DSV102, DSV301)
-- [ ] Settings
-  - `docstringVerifier.enable`
-  - `docstringVerifier.logLevel`
-  - `docstringVerifier.pythonPath`
-  - `docstringVerifier.docstringStyle`
+  - [x] Add related information for diagnostics (DSV102, DSV202, DSV301)
+  - [x] Update interface to pass documentUri to analyzers
+  - [x] 142 tests passing (added DSV101/DSV102 tests + style detector tests)
+- [x] Settings
+  - [x] `docstringVerifier.enable` - Enable/disable extension
+  - [x] `docstringVerifier.logLevel` - Logging level (error/warn/info/debug/trace)
+  - [x] `docstringVerifier.pythonPath` - Custom Python interpreter path
+  - [x] `docstringVerifier.pythonScriptPath` - Custom ast_extractor.py path (dev only)
+  - [x] `docstringVerifier.preferUv` - Prefer uv for running Python scripts
+  - [x] `docstringVerifier.docstringStyle` - Style selection (auto/google/sphinx)
+  - [x] Auto-detection of docstring style (Google vs Sphinx)
+  - [x] Configuration change listener for real-time enable/disable
 
 ### TypeScript Support
 

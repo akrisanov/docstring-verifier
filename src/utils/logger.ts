@@ -135,6 +135,7 @@ export class Logger {
      * Dispose of the logger.
      */
     dispose(): void {
+        this.configListener.dispose();
         this.outputChannel.dispose();
     }
 }

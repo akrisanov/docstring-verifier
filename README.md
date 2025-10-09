@@ -24,8 +24,9 @@ Sneak peek of the extension prototype in action:
 
 - Python only supports Google and Sphinx docstring formats (not NumPy)
 - Basic type checking (doesn't handle complex generics or custom types)
-- Side effects detection is primitive (file I/O, print, globals only)
-- TypeScript support doesn't cover all JSDoc tags
+- TypeScript/JavaScript support not yet implemented (architecture ready)
+- Quick Fixes (auto-generate docstrings) not yet implemented
+- Side effects detection (DSV401) not yet implemented
 - No integration with type checkers (mypy, pyright)
 
 ## Architecture
@@ -69,12 +70,36 @@ Simple high-level flow:
 - **5 Return Validation Rules**: Type mismatch, Missing documentation, Void functions, Multiple returns, Generator yields
 - **4 Parameter Validation Rules**: Missing in code/docstring, Type mismatch, Optional mismatch
 - **2 Exception Validation Rules**: Missing documentation, Documented but not raised
-- **Multi-language**: Python (Google/Sphinx) + TypeScript (JSDoc)
+- **Auto-detection**: Automatically detects Google vs Sphinx docstring style
+- **Multi-language Ready**: Python (Google/Sphinx) implemented, TypeScript architecture ready
 - **Generator Support**: Detects yield statements and validates Yields vs Returns sections
-- **Diagnostic Codes**: DSV101-401 for filtering
-- **Quick Fixes**: Auto-generate corrected docstrings
+- **Diagnostic Codes**: DSV101-302 for filtering and identification
+- **Performance Optimized**: Caching and sampling for fast analysis
 
 For detailed architecture, see [Design.md](./docs/Design.md).
+
+## Configuration
+
+The extension can be configured via VS Code settings (`Preferences: Open Settings (JSON)`):
+
+```json
+{
+  // Enable/disable the extension
+  "docstringVerifier.enable": true,
+
+  // Logging level (error, warn, info, debug, trace)
+  "docstringVerifier.logLevel": "info",
+
+  // Custom Python interpreter path (leave empty for auto-detection)
+  "docstringVerifier.pythonPath": "",
+
+  // Prefer uv for running Python scripts (faster, more reliable)
+  "docstringVerifier.preferUv": true,
+
+  // Docstring style (auto = detect automatically, google, sphinx)
+  "docstringVerifier.docstringStyle": "auto"
+}
+```
 
 ## Technical Stack
 

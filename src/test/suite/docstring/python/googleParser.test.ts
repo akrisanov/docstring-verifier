@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { GoogleDocstringParser } from '../../../docstring/python/googleParser';
+import { GoogleDocstringParser } from '../../../../docstring/python/googleParser';
 
 suite('GoogleDocstringParser Test Suite', () => {
 	let parser: GoogleDocstringParser;
