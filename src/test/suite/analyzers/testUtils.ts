@@ -50,8 +50,8 @@ export function createTestFunction(options: CreateFunctionOptions = {}): Functio
 		isGenerator: options.isGenerator ?? false,
 		isAsync: options.isAsync ?? false,
 		raises: options.raises ?? [],
-		docstring: options.docstring ?? 'Test',
-		docstringRange: options.docstringRange ?? TEST_RANGE,
+		docstring: 'docstring' in options ? options.docstring! : 'Test',
+		docstringRange: 'docstringRange' in options ? options.docstringRange! : TEST_RANGE,
 		hasIO: options.hasIO ?? false,
 		hasGlobalMods: options.hasGlobalMods ?? false,
 	};

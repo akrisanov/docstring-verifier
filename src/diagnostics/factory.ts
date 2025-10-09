@@ -196,4 +196,40 @@ export class DiagnosticFactory {
 		diagnostic.source = DiagnosticFactory.SOURCE;
 		return diagnostic;
 	}
+
+	/**
+	 * Create diagnostic for exception raised but not documented (DSV301)
+	 */
+	static createExceptionNotDocumented(
+		exceptionType: string,
+		functionName: string,
+		range: vscode.Range
+	): vscode.Diagnostic {
+		const diagnostic = new vscode.Diagnostic(
+			range,
+			`Exception '${exceptionType}' is raised in function '${functionName}' but not documented in docstring`,
+			vscode.DiagnosticSeverity.Warning
+		);
+		diagnostic.code = DiagnosticCode.EXCEPTION_UNDOCUMENTED;
+		diagnostic.source = DiagnosticFactory.SOURCE;
+		return diagnostic;
+	}
+
+	/**
+	 * Create diagnostic for exception documented but not raised (DSV302)
+	 */
+	static createExceptionNotRaised(
+		exceptionType: string,
+		functionName: string,
+		range: vscode.Range
+	): vscode.Diagnostic {
+		const diagnostic = new vscode.Diagnostic(
+			range,
+			`Exception '${exceptionType}' is documented but not raised in function '${functionName}'`,
+			vscode.DiagnosticSeverity.Information
+		);
+		diagnostic.code = DiagnosticCode.EXCEPTION_NOT_RAISED;
+		diagnostic.source = DiagnosticFactory.SOURCE;
+		return diagnostic;
+	}
 }

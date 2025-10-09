@@ -16,7 +16,7 @@ Build a VS Code extension that detects discrepancies between docstrings and actu
 
 The implementation plan can be found in [MVP.md](./docs/MVP.md).
 
-Sneak peek of the extension prototype (day 2) in action:
+Sneak peek of the extension prototype in action:
 
 ![Demo](./docs/day3.png)
 
@@ -68,6 +68,7 @@ Simple high-level flow:
 
 - **5 Return Validation Rules**: Type mismatch, Missing documentation, Void functions, Multiple returns, Generator yields
 - **4 Parameter Validation Rules**: Missing in code/docstring, Type mismatch, Optional mismatch
+- **2 Exception Validation Rules**: Missing documentation, Documented but not raised
 - **Multi-language**: Python (Google/Sphinx) + TypeScript (JSDoc)
 - **Generator Support**: Detects yield statements and validates Yields vs Returns sections
 - **Diagnostic Codes**: DSV101-401 for filtering

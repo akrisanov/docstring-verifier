@@ -23,6 +23,7 @@ docstring mismatches detected by the extension.
 ### Exception Analyzer (DSV3xx)
 
 - **dsv301_missing_exception.py** - DSV301: Exception raised but not documented in docstring
+- **dsv302_exception_not_raised.py** - DSV302: Exception documented but not raised in code
 
 ## Usage
 

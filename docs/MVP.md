@@ -2,8 +2,9 @@
 
 ## Current Status
 
-**Day 1:** ✅ Complete
-**Day 2:** ✅ Complete
+**Day 1:** ✅ Complete  
+**Day 2:** ✅ Complete  
+**Day 3:** ✅ Complete
 
 ## Day 1: Entry Point + End-to-End Skeleton
 
@@ -82,10 +83,10 @@
   - [x] DSV203: Docstring says returns, but function is void
   - [x] DSV204: Multiple inconsistent return types
   - [x] DSV205: Generator should use Yields, not Returns
-- [ ] Exception Analyzer
-  - DSV301: Exception raised but not documented
-  - DSV302: Exception documented but not raised
-  - Track exceptions in function body
+- [x] Exception Analyzer
+  - [x] DSV301: Exception raised but not documented
+  - [x] DSV302: Exception documented but not raised
+  - [x] Track exceptions in function body
 - [x] Diagnostic Factory
   - Create `vscode.Diagnostic` with code, severity, range
   - Assign diagnostic codes (DSV101-302)
@@ -96,7 +97,7 @@
   - Create and display diagnostics
   - Show in Problems panel
 
-**Milestone:** 3 types of validation rules working with proper diagnostics
+**Milestone:** ✅ Complete - All 3 analyzer types (Signature, Return, Exception) working with 11 validation rules (DSV101-104, DSV201-205, DSV301-302)
 
 ## Day 4: Polish Python and TypeScript Support
 
