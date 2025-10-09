@@ -80,9 +80,9 @@ For detailed architecture, see [Design.md](./docs/Design.md).
 
 ## Configuration
 
-The extension can be configured via VS Code settings (`Preferences: Open Settings (JSON)`):
+The extension can be configured via VS Code settings -> Preferences: Open Settings (JSON):
 
-```json
+```jsonc
 {
   // Enable/disable the extension
   "docstringVerifier.enable": true,

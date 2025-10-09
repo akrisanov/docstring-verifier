@@ -265,4 +265,23 @@ export class DiagnosticFactory {
 		diagnostic.source = DiagnosticFactory.SOURCE;
 		return diagnostic;
 	}
+
+	/**
+	 * Create diagnostic for undocumented side effects (DSV401)
+	 */
+	static createSideEffectUndocumented(
+		functionName: string,
+		sideEffectTypes: string[],
+		range: vscode.Range
+	): vscode.Diagnostic {
+		const effectsStr = sideEffectTypes.join(' and ');
+		const diagnostic = new vscode.Diagnostic(
+			range,
+			`Function '${functionName}' has side effects (${effectsStr}) that should be documented. Add a Note section describing the side effects.`,
+			vscode.DiagnosticSeverity.Information
+		);
+		diagnostic.code = DiagnosticCode.SIDE_EFFECT_UNDOCUMENTED;
+		diagnostic.source = DiagnosticFactory.SOURCE;
+		return diagnostic;
+	}
 }

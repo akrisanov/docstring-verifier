@@ -102,7 +102,10 @@ def test_exception_tracking(sample_result):
 
 
 def test_io_detection(sample_result):
-    """Test detection of I/O operations."""
+    """Test detection of I/O operations (smoke test on fixture).
+
+    Note: More comprehensive I/O tests in test_side_effects_io.
+    """
     result = sample_result
 
     fetch = result["functions"][1]
@@ -113,7 +116,10 @@ def test_io_detection(sample_result):
 
 
 def test_global_mods(sample_result):
-    """Test detection of global modifications."""
+    """Test detection of global modifications (smoke test on fixture).
+
+    Note: More comprehensive global/nonlocal tests in test_side_effects_global_mods.
+    """
     result = sample_result
 
     process = result["functions"][2]
@@ -279,3 +285,157 @@ def delegate_generator():
     func = result["functions"][0]
     assert func["isGenerator"], "Should detect as generator"
     assert len(func["yieldStatements"]) == 2, "Should track 2 yield from statements"
+
+
+def test_side_effects_io(tmp_path):
+    """Test detection of I/O side effects."""
+    io_file = tmp_path / "io_test.py"
+    io_file.write_text("""
+def write_log(message: str):
+    '''Write a log message.'''
+    with open('log.txt', 'a') as f:
+        f.write(message)
+
+def print_debug(value):
+    '''Print debug info.'''
+    print(f"Debug: {value}")
+
+def read_config():
+    '''Read configuration.'''
+    with open('config.txt', 'r') as f:
+        return f.read()
+
+def get_input():
+    '''Get user input.'''
+    return input("Enter value: ")
+
+def pure_function(x, y):
+    '''Pure function.'''
+    return x + y
+""")
+
+    result = run_extractor(str(io_file))
+    assert result["success"], "Should succeed"
+    assert len(result["functions"]) == 5, "Should find 5 functions"
+
+    # Test write_log - has file I/O
+    write_log = result["functions"][0]
+    assert write_log["name"] == "write_log"
+    assert write_log["hasIO"], "Should detect file write as I/O"
+    assert not write_log["hasGlobalMods"], "Should not have global mods"
+
+    # Test print_debug - has print I/O
+    print_debug = result["functions"][1]
+    assert print_debug["name"] == "print_debug"
+    assert print_debug["hasIO"], "Should detect print as I/O"
+    assert not print_debug["hasGlobalMods"], "Should not have global mods"
+
+    # Test read_config - has file I/O
+    read_config = result["functions"][2]
+    assert read_config["name"] == "read_config"
+    assert read_config["hasIO"], "Should detect file read as I/O"
+    assert not read_config["hasGlobalMods"], "Should not have global mods"
+
+    # Test get_input - has input I/O
+    get_input = result["functions"][3]
+    assert get_input["name"] == "get_input"
+    assert get_input["hasIO"], "Should detect input as I/O"
+    assert not get_input["hasGlobalMods"], "Should not have global mods"
+
+    # Test pure_function - no side effects
+    pure_function = result["functions"][4]
+    assert pure_function["name"] == "pure_function"
+    assert not pure_function["hasIO"], "Should not detect I/O"
+    assert not pure_function["hasGlobalMods"], "Should not have global mods"
+
+
+def test_side_effects_global_mods(tmp_path):
+    """Test detection of global variable modifications."""
+    global_file = tmp_path / "global_test.py"
+    global_file.write_text("""
+counter = 0
+
+def increment():
+    '''Increment counter.'''
+    global counter
+    counter += 1
+    return counter
+
+def use_nonlocal():
+    '''Use nonlocal.'''
+    x = 0
+    def inner():
+        nonlocal x
+        x += 1
+        return x
+    return inner
+
+def read_global():
+    '''Read global.'''
+    return counter
+
+def pure_function(x):
+    '''Pure function.'''
+    y = x * 2
+    return y
+""")
+
+    result = run_extractor(str(global_file))
+    assert result["success"], "Should succeed"
+    # Note: Extractor also finds nested functions like 'inner'
+    assert len(result["functions"]) == 5, "Should find 5 functions (including nested)"
+
+    # Test increment - has global statement
+    increment = result["functions"][0]
+    assert increment["name"] == "increment"
+    assert increment["hasGlobalMods"], "Should detect global statement"
+    assert not increment["hasIO"], "Should not have I/O"
+
+    # Test inner - has nonlocal statement (nested function)
+    inner = result["functions"][1]
+    assert inner["name"] == "inner"
+    assert inner["hasGlobalMods"], "Should detect nonlocal statement"
+    assert not inner["hasIO"], "Should not have I/O"
+
+    # Test use_nonlocal - outer function (no global/nonlocal at this level)
+    use_nonlocal = result["functions"][2]
+    assert use_nonlocal["name"] == "use_nonlocal"
+    assert not use_nonlocal["hasGlobalMods"], "Outer function doesn't have global/nonlocal"
+    assert not use_nonlocal["hasIO"], "Should not have I/O"
+
+    # Test read_global - just reads global (no global statement)
+    read_global = result["functions"][3]
+    assert read_global["name"] == "read_global"
+    assert not read_global["hasGlobalMods"], "Should not detect read-only global usage"
+    assert not read_global["hasIO"], "Should not have I/O"
+
+    # Test pure_function - no side effects
+    pure_function = result["functions"][4]
+    assert pure_function["name"] == "pure_function"
+    assert not pure_function["hasGlobalMods"], "Should not have global mods"
+    assert not pure_function["hasIO"], "Should not have I/O"
+
+
+def test_side_effects_combined(tmp_path):
+    """Test detection of multiple side effects."""
+    combined_file = tmp_path / "combined_test.py"
+    combined_file.write_text("""
+log_count = 0
+
+def log_and_count(message: str):
+    '''Log message and count.'''
+    global log_count
+    log_count += 1
+    with open('log.txt', 'a') as f:
+        f.write(f"{log_count}: {message}\\n")
+    print(f"Logged #{log_count}")
+""")
+
+    result = run_extractor(str(combined_file))
+    assert result["success"], "Should succeed"
+    assert len(result["functions"]) == 1, "Should find 1 function"
+
+    func = result["functions"][0]
+    assert func["name"] == "log_and_count"
+    assert func["hasIO"], "Should detect I/O side effects"
+    assert func["hasGlobalMods"], "Should detect global modifications"

@@ -97,7 +97,7 @@
   - Create and display diagnostics
   - Show in Problems panel
 
-**Milestone:** ✅ Complete - All 3 analyzer types (Signature, Return, Exception) working with 11 validation rules (DSV101-104, DSV201-205, DSV301-302)
+**Milestone:** Complete - All 3 analyzer types (Signature, Return, Exception) working with 11 validation rules (DSV101-104, DSV201-205, DSV301-302)
 
 ## Day 4: Polish Python and TypeScript Support
 
@@ -106,9 +106,9 @@
 - [ ] Sphinx Docstring Parser
   - Parse `:param:`, `:type:`, `:returns:`, `:raises:`
   - Auto-detect Google vs Sphinx style
-- [ ] Side Effects Analyzer
-  - DSV401: Detect file I/O, print, global modifications
-  - Heuristic-based detection
+- [x] Side Effects Analyzer
+  - [x] DSV401: Detect file I/O, print, global modifications
+  - [x] Heuristic-based detection
 - [x] Better Error Messages
   - [x] More descriptive diagnostic messages with actionable hints
   - [x] Add related information for diagnostics (DSV102, DSV202, DSV301)

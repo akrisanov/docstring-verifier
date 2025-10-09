@@ -5,7 +5,7 @@ import { IParser } from './parsers/base';
 import { PythonParser } from './parsers/python/pythonParser';
 import { GoogleDocstringParser, IDocstringParser, detectFileDocstringStyle } from './docstring/python';
 import { IAnalyzer } from './analyzers/base';
-import { PythonSignatureAnalyzer, PythonReturnAnalyzer, PythonExceptionAnalyzer } from './analyzers/python';
+import { PythonSignatureAnalyzer, PythonReturnAnalyzer, PythonExceptionAnalyzer, PythonSideEffectsAnalyzer } from './analyzers/python';
 
 // Global instances
 let logger: Logger;
@@ -15,6 +15,7 @@ let docstringParser: IDocstringParser;
 let signatureAnalyzer: IAnalyzer;
 let returnAnalyzer: IAnalyzer;
 let exceptionAnalyzer: IAnalyzer;
+let sideEffectsAnalyzer: IAnalyzer;
 
 // Cache for detected docstring styles per document
 // Key: document.uri.toString(), Value: detected style
@@ -42,6 +43,7 @@ export function activate(context: vscode.ExtensionContext) {
 	signatureAnalyzer = new PythonSignatureAnalyzer();
 	returnAnalyzer = new PythonReturnAnalyzer();
 	exceptionAnalyzer = new PythonExceptionAnalyzer();
+	sideEffectsAnalyzer = new PythonSideEffectsAnalyzer();
 	logger.info('Initialized PythonParser, GoogleDocstringParser, and all analyzers');
 
 	// Register document save listener
@@ -231,7 +233,8 @@ async function analyzeDocument(document: vscode.TextDocument): Promise<void> {
 			const funcDiagnostics = [
 				...signatureAnalyzer.analyze(func, parsedDocstring, document.uri),
 				...returnAnalyzer.analyze(func, parsedDocstring, document.uri),
-				...exceptionAnalyzer.analyze(func, parsedDocstring, document.uri)
+				...exceptionAnalyzer.analyze(func, parsedDocstring, document.uri),
+				...sideEffectsAnalyzer.analyze(func, parsedDocstring, document.uri)
 			];
 			diagnostics.push(...funcDiagnostics);
 		}

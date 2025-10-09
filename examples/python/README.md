@@ -25,6 +25,10 @@ docstring mismatches detected by the extension.
 - **dsv301_missing_exception.py** - DSV301: Exception raised but not documented in docstring
 - **dsv302_exception_not_raised.py** - DSV302: Exception documented but not raised in code
 
+### Side Effects Analyzer (DSV4xx)
+
+- **dsv401_side_effects.py** - DSV401: Side effects (I/O, print, global modifications) not documented
+
 ## Usage
 
 1. Press **F5** to launch Extension Development Host
