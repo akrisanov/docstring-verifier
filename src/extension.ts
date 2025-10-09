@@ -1,26 +1,12 @@
 import * as vscode from 'vscode';
 import { Logger } from './utils/logger';
-import { isEnabled, getDocstringStyle } from './utils/config';
-import { IParser } from './parsers/base';
-import { PythonParser } from './parsers/python/pythonParser';
-import { GoogleDocstringParser, SphinxDocstringParser, IDocstringParser, detectFileDocstringStyle } from './docstring/python';
-import { IAnalyzer } from './analyzers/base';
-import { PythonSignatureAnalyzer, PythonReturnAnalyzer, PythonExceptionAnalyzer, PythonSideEffectsAnalyzer } from './analyzers/python';
+import { isEnabled } from './utils/config';
+import { LanguageHandlerRegistry, createPythonHandler } from './languages';
 
 // Global instances
 let logger: Logger;
 let diagnosticCollection: vscode.DiagnosticCollection;
-let pythonParser: IParser;
-let googleDocstringParser: IDocstringParser;
-let sphinxDocstringParser: IDocstringParser;
-let signatureAnalyzer: IAnalyzer;
-let returnAnalyzer: IAnalyzer;
-let exceptionAnalyzer: IAnalyzer;
-let sideEffectsAnalyzer: IAnalyzer;
-
-// Cache for detected docstring styles per document
-// Key: document.uri.toString(), Value: detected style
-const docstringStyleCache = new Map<string, 'google' | 'sphinx'>();
+let languageRegistry: LanguageHandlerRegistry;
 
 // Track documents currently being analyzed to prevent concurrent analysis
 const analyzingDocuments = new Set<string>();
@@ -38,15 +24,16 @@ export function activate(context: vscode.ExtensionContext) {
 	diagnosticCollection = vscode.languages.createDiagnosticCollection('docstring-verifier');
 	context.subscriptions.push(diagnosticCollection);
 
-	// Initialize parsers
-	pythonParser = new PythonParser(context);
-	googleDocstringParser = new GoogleDocstringParser();
-	sphinxDocstringParser = new SphinxDocstringParser();
-	signatureAnalyzer = new PythonSignatureAnalyzer();
-	returnAnalyzer = new PythonReturnAnalyzer();
-	exceptionAnalyzer = new PythonExceptionAnalyzer();
-	sideEffectsAnalyzer = new PythonSideEffectsAnalyzer();
-	logger.info('Initialized PythonParser, GoogleDocstringParser, SphinxDocstringParser, and all analyzers');
+	// Initialize language handler registry
+	languageRegistry = new LanguageHandlerRegistry();
+
+	// Register language handlers
+	languageRegistry.register('python', createPythonHandler(context));
+	logger.info('Registered language handlers: Python');
+
+	// TODO (Future): Register TypeScript/JavaScript handlers
+	// languageRegistry.register('typescript', createTypeScriptHandler(context));
+	// languageRegistry.register('javascript', createJavaScriptHandler(context));
 
 	// Register document save listener
 	// Note: We analyze on save rather than on every change to avoid performance issues
@@ -70,16 +57,8 @@ export function activate(context: vscode.ExtensionContext) {
 		})
 	);
 
-	// Register document close listener - clear cache
-	context.subscriptions.push(
-		vscode.workspace.onDidCloseTextDocument((document) => {
-			const docUri = document.uri.toString();
-			if (docstringStyleCache.has(docUri)) {
-				docstringStyleCache.delete(docUri);
-				logger.trace(`Cleared docstring style cache for: ${document.fileName}`);
-			}
-		})
-	);
+	// Note: Document close listener removed - cache clearing is now handled
+	// internally by language handlers via resetCache() method
 
 	// Analyze all currently open documents
 	vscode.workspace.textDocuments.forEach((document) => {
@@ -108,11 +87,12 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 
 			if (event.affectsConfiguration('docstringVerifier.docstringStyle')) {
-				logger.info('Docstring style setting changed - clearing cache');
-				docstringStyleCache.clear();
-				// Re-analyze all open documents with new style
+				logger.info('Docstring style setting changed - clearing Python cache');
+				// Only Python has docstring style configuration
+				languageRegistry.resetCache('python');
+				// Re-analyze all open Python documents with new style
 				vscode.workspace.textDocuments.forEach((document) => {
-					if (shouldAnalyze(document)) {
+					if (shouldAnalyze(document) && document.languageId === 'python') {
 						analyzeDocument(document);
 					}
 				});
@@ -123,8 +103,8 @@ export function activate(context: vscode.ExtensionContext) {
 			// setting and requires extension reload anyway
 			if (event.affectsConfiguration('docstringVerifier.pythonPath') ||
 				event.affectsConfiguration('docstringVerifier.preferUv')) {
-				logger.info('Python settings changed - resetting Python executor');
-				pythonParser.resetExecutor?.();
+				logger.info('Python settings changed - resetting Python cache');
+				languageRegistry.resetCache('python');
 				// Re-analyze all open Python documents
 				vscode.workspace.textDocuments.forEach((document) => {
 					if (shouldAnalyze(document) && document.languageId === 'python') {
@@ -149,9 +129,8 @@ function shouldAnalyze(document: vscode.TextDocument): boolean {
 		return false;
 	}
 
-	// Only analyze Python and TypeScript files
-	const supportedLanguages = ['python', 'typescript', 'javascript'];
-	return supportedLanguages.includes(document.languageId);
+	// Check if language is supported by checking registry
+	return languageRegistry.isSupported(document.languageId);
 }
 
 /**
@@ -173,46 +152,32 @@ async function analyzeDocument(document: vscode.TextDocument): Promise<void> {
 	diagnosticCollection.delete(document.uri);
 
 	try {
+		// Get language handler for this document
+		const handler = languageRegistry.get(document.languageId);
+		if (!handler) {
+			logger.error(`No handler registered for language: ${document.languageId}`);
+			return;
+		}
+
 		// Step 1: Parse the document to extract functions
-		const functions = await pythonParser.parse(document);
+		const functions = await handler.parser.parse(document);
 		logger.debug(`Found ${functions.length} functions in ${document.fileName}`);
 
 		if (functions.length === 0) {
 			return;
 		}
 
-		// Step 2: Auto-detect docstring style if needed
-		const configuredStyle = getDocstringStyle();
-		let detectedStyle: 'google' | 'sphinx' = 'google';
+		// Step 2: Select appropriate docstring parser (language-specific logic)
+		const docstringParser = handler.selectDocstringParser
+			? handler.selectDocstringParser(document, functions)
+			: handler.docstringParsers.values().next().value;
 
-		if (configuredStyle === 'auto') {
-			// Check cache first
-			const cachedStyle = docstringStyleCache.get(docUri);
-
-			if (cachedStyle) {
-				detectedStyle = cachedStyle;
-				logger.trace(`Using cached docstring style: ${detectedStyle}`);
-			} else {
-				// Collect docstrings for style detection (limited to first 20 for performance)
-				const docstrings = functions
-					.map(f => f.docstring)
-					.filter((d): d is string => d !== null);
-
-				const detected = detectFileDocstringStyle(docstrings);
-				detectedStyle = detected === 'unknown' ? 'google' : detected;
-
-				// Cache the result
-				docstringStyleCache.set(docUri, detectedStyle);
-				logger.debug(`Auto-detected and cached docstring style: ${detectedStyle}`);
-			}
-		} else {
-			detectedStyle = configuredStyle;
-			logger.debug(`Using configured docstring style: ${detectedStyle}`);
+		if (!docstringParser) {
+			logger.error(`No docstring parser available for ${document.languageId}`);
+			return;
 		}
 
-		// Select the appropriate parser based on detected style
-		const docstringParser = detectedStyle === 'sphinx' ? sphinxDocstringParser : googleDocstringParser;
-		logger.debug(`Using ${detectedStyle} docstring parser`);
+		logger.debug(`Using docstring parser for ${document.languageId}`);
 
 		// Step 3: Parse docstrings and analyze
 		const diagnostics: vscode.Diagnostic[] = [];
@@ -228,14 +193,11 @@ async function analyzeDocument(document: vscode.TextDocument): Promise<void> {
 			const parsedDocstring = docstringParser.parse(func.docstring);
 			logger.trace(`Parsed docstring for '${func.name}': ${parsedDocstring.parameters.length} params documented`);
 
-			// Use analyzers to validate parameters and returns
-			const funcDiagnostics = [
-				...signatureAnalyzer.analyze(func, parsedDocstring, document.uri),
-				...returnAnalyzer.analyze(func, parsedDocstring, document.uri),
-				...exceptionAnalyzer.analyze(func, parsedDocstring, document.uri),
-				...sideEffectsAnalyzer.analyze(func, parsedDocstring, document.uri)
-			];
-			diagnostics.push(...funcDiagnostics);
+			// Run all analyzers for this language
+			for (const analyzer of handler.analyzers) {
+				const funcDiagnostics = analyzer.analyze(func, parsedDocstring, document.uri);
+				diagnostics.push(...funcDiagnostics);
+			}
 		}
 
 		// Step 4: Set diagnostics

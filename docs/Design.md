@@ -2,18 +2,22 @@
 
 ## Overview
 
-Docstring Verifier is a VS Code extension that validates consistency between Python function
-signatures and their docstrings. The extension performs real-time analysis and displays
-diagnostics for detected mismatches.
+Docstring Verifier is a VS Code extension that validates consistency between function
+signatures and their docstrings. The extension uses a **multi-language architecture**
+that supports Python (implemented) with extensibility for TypeScript/JavaScript (planned).
 
 **Current Capabilities:**
 
+- ✅ Multi-language architecture with Language Handler Registry
+- ✅ Python support with Google and Sphinx docstring styles
 - ✅ Parameter validation (4 rules)
 - ✅ Return type validation (5 rules)
+- ✅ Exception validation (3 rules)
+- ✅ Side effects detection (1 rule)
 - ✅ Generator and async function support
 - ✅ Real-time diagnostics in VS Code Problems panel
-- 🚧 Exception validation (in progress)
 - 🚧 Code Actions / Quick Fixes (planned)
+- 🚧 TypeScript/JavaScript support (planned)
 
 ## High-Level Architecture
 
@@ -32,33 +36,63 @@ diagnostics for detected mismatches.
            │  • Register diagnostic        │
            │    collection                 │
            │  • Document listeners         │
-           │  • Coordinate analysis        │
+           │  • Initialize Language        │
+           │    Handler Registry           │
            └───────────────┬───────────────┘
                            │
-                           │ Parse request
+                           │ Get handler for language
                            │
            ┌───────────────▼───────────────┐
-           │        Parser Layer           │
+           │   Language Handler Registry   │
            │                               │
-           │  ┌─────────────────────────┐  │
-           │  │   Language Parser       │  │
-           │  │   (Python AST)          │  │
-           │  │                         │  │
-           │  │  • Extract function     │  │
-           │  │    signatures           │  │
-           │  │  • Parameters, returns  │  │
-           │  │  • Yields, exceptions   │  │
-           │  └─────────────────────────┘  │
+           │  • register(languageId, ...)  │
+           │  • get(languageId)            │
+           │  • isSupported(languageId)    │
+           │  • resetCache(languageId)     │
            │                               │
-           │  ┌─────────────────────────┐  │
-           │  │  Docstring Parser       │  │
-           │  │  (Google-style)         │  │
-           │  │                         │  │
-           │  │  • Args, Returns        │  │
-           │  │  • Raises, Yields       │  │
-           │  │  • Multi-line support   │  │
-           │  └─────────────────────────┘  │
+           │  Registered Handlers:         │
+           │  └─► Python Handler.          │
+           │  └─► TypeScript Handler       │
+           │  └─► JavaScript Handler       │
            └───────────────┬───────────────┘
+                           │
+                           │ Returns LanguageHandler
+                           │
+           ┌───────────────▼───────────────┐
+           │      Language Handler         │
+           │      (Python Example)         │
+           │                               │
+           │  • parser: IParser            │
+           │  • docstringParsers: Map      │
+           │  • analyzers: IAnalyzer[]     │
+           │  • selectDocstringParser()    │
+           │  • resetCache()               │
+           └───────────────┬───────────────┘
+                           │
+            ┌──────────────┴──────────────┐
+            │                             │
+            │ Parse                       │ Parse
+            ▼                             ▼
+  ┌─────────────────┐         ┌─────────────────────┐
+  │  Parser Layer   │         │  Docstring Parser   │
+  │                 │         │                     │
+  │ ┌─────────────┐ │         │ ┌─────────────────┐ │
+  │ │   Python    │ │         │ │ Google Style    │ │
+  │ │   Parser    │ │         │ │ Parser          │ │
+  │ │   (AST)     │ │         │ └─────────────────┘ │
+  │ └─────────────┘ │         │                     │
+  │                 │         │ ┌─────────────────┐ │
+  │ • Extract       │         │ │ Sphinx Style    │ │
+  │   function      │         │ │ Parser          │ │
+  │   signatures    │         │ └─────────────────┘ │
+  │ • Parameters    │         │                     │
+  │ • Returns       │         │ • Args, Returns     │
+  │ • Yields        │         │ • Raises, Yields    │
+  │ • Exceptions    │         │ • Auto-detection    │
+  │ • Side effects  │         │ • Multi-line        │
+  └─────────────────┘         └─────────────────────┘
+            │                             │
+            └──────────────┬──────────────┘
                            │
                            │ Parsed data
                            │
@@ -82,7 +116,13 @@ diagnostics for detected mismatches.
            │  ┌─────────────────────────┐  │
            │  │  Exception Analyzer     │  │
            │  │  • Raised vs documented │  │
-           │  │  • (in progress)        │  │
+           │  │  • Exception types      │  │
+           │  └─────────────────────────┘  │
+           │                               │
+           │  ┌─────────────────────────┐  │
+           │  │  Side Effects Analyzer  │  │
+           │  │  • I/O operations       │  │
+           │  │  • Global modifications │  │
            │  └─────────────────────────┘  │
            └───────────────┬───────────────┘
                            │
@@ -168,7 +208,7 @@ Preserves and compares complex types:
 - Unions: `str | int | None`
 - No deep type checking (by design)
 
-## Generator Support
+### Generator Support
 
 Functions with `yield` or `yield from` statements are marked as generators:
 
@@ -177,26 +217,85 @@ Functions with `yield` or `yield from` statements are marked as generators:
 
 ## Extension Points
 
+### Adding New Languages
+
+Language Handler Registry pattern makes it easy to add new languages.
+
+**Steps:**
+
+1. **Create Language Handler Factory** (`src/languages/{language}/factory.ts`)
+
+   ```typescript
+   export function createTypeScriptHandler(context: vscode.ExtensionContext): LanguageHandler {
+     return {
+       parser: new TypeScriptParser(),
+       docstringParsers: new Map([['jsdoc', new JSDocParser()]]),
+       analyzers: [
+         new TypeScriptSignatureAnalyzer(),
+         new TypeScriptReturnAnalyzer(),
+         new TypeScriptExceptionAnalyzer(),
+       ],
+       // Optional: selectDocstringParser() if multiple styles
+       // Optional: resetCache() for cleanup
+     };
+   }
+   ```
+
+2. **Implement Language Parser** (`src/parsers/{language}/`)
+   - Implement `IParser` interface
+   - Extract function metadata to `FunctionDescriptor`
+   - Use language-specific AST (e.g., TypeScript Compiler API)
+
+3. **Implement Docstring Parser** (`src/docstring/{language}/`)
+   - Implement `IDocstringParser` interface
+   - Parse documentation to `DocstringDescriptor`
+   - Handle language-specific formats (JSDoc, TSDoc, etc.)
+
+4. **Adapt or Create Analyzers** (`src/analyzers/{language}/`)
+   - Reuse existing analyzers if logic is universal
+   - Create language-specific versions for unique patterns
+   - Example: Exception handling differs (try/catch vs raise)
+
+5. **Register in extension.ts**
+
+   ```typescript
+   languageRegistry.register('typescript', createTypeScriptHandler(context));
+   ```
+
+**That's it!** No need to modify core extension logic.
+
 ### Adding New Analyzers
 
 1. Implement `IAnalyzer` interface
 2. Add diagnostic codes to `DiagnosticCode` enum
-3. Register in `extension.ts` analysis pipeline
+3. Add analyzer to language handler's `analyzers` array
 4. Create factory methods in `DiagnosticFactory`
 
 ### Adding New Docstring Formats
 
 1. Implement `IDocstringParser` interface
 2. Parse sections into `DocstringDescriptor`
-3. Add format detection logic
-4. Register parser in extension
+3. Add format detection logic (optional)
+4. Register parser in language handler's `docstringParsers` Map
 
-### Adding New Languages
+### Multi-Language Architecture
 
-1. Implement `IParser` interface for language
-2. Extract function metadata to `FunctionDescriptor`
-3. Adapt analyzers or create language-specific ones
-4. Update activation events in `package.json`
+**Key Components:**
+
+1. **LanguageHandler Interface** (`src/languages/types.ts`)
+   - Defines contract for all language implementations
+   - Contains parser, docstring parsers, and analyzers
+   - Optional methods for language-specific behavior
+
+2. **LanguageHandlerRegistry** (`src/languages/registry.ts`)
+   - Centralized registry for language handlers
+   - Methods: `register()`, `get()`, `isSupported()`, `resetCache()`
+   - Enables dynamic language registration
+
+3. **Language Factories** (`src/languages/{language}/factory.ts`)
+   - Create and configure language-specific handlers
+   - Encapsulate initialization logic
+   - Example: `createPythonHandler(context)`
 
 ## Technical Decisions
 
@@ -237,9 +336,7 @@ Functions with `yield` or `yield from` statements are marked as generators:
 
 ---
 
-## Future Architecture
-
-### Planned: Code Actions Layer
+## Planned: Code Actions Layer
 
 ```text
 User clicks Quick Fix
@@ -256,14 +353,17 @@ Apply WorkspaceEdit
 Updated docstring in file
 ```
 
-### Planned: Configuration
+### Configuration
 
-User settings:
+- Auto-detection analyzes docstring patterns and caches results per document
+- Custom Python path takes precedence over bundled uv
+- Settings can be configured in VS Code user/workspace settings
 
-- `docstringVerifier.enable` - On/off toggle
-- `docstringVerifier.pythonPath` - Custom Python path
-- `docstringVerifier.docstringStyle` - Google/Sphinx
-- `docstringVerifier.disabledChecks` - Disable specific rules
+Future settings under consideration:
+
+- `docstringVerifier.disabledChecks` - Disable specific diagnostic rules (e.g., `["DSV204"]`)
+- `docstringVerifier.severity` - Override severity levels per rule
+- `docstringVerifier.excludePatterns` - Exclude files/folders from analysis
 
 ## Performance Considerations
 

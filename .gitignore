@@ -3,7 +3,7 @@ dist
 node_modules
 .vscode-test/
 *.vsix
-Notes.md
+TODO.md
 
 # Coverage
 coverage/
