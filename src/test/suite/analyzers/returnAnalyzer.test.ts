@@ -1,53 +1,24 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { PythonReturnAnalyzer } from '../../../analyzers/python/returnAnalyzer';
-import { FunctionDescriptor } from '../../../parsers/types';
-import { DocstringDescriptor, DocstringReturnDescriptor } from '../../../docstring/types';
 import { DiagnosticCode } from '../../../diagnostics/types';
+import {
+	createTestFunction,
+	createTestDocstring
+} from './testUtils';
 
 suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 	let analyzer: PythonReturnAnalyzer;
-	const testRange = new vscode.Range(0, 0, 10, 0);
-
-	/**
-	 * Helper to create a minimal FunctionDescriptor for testing
-	 */
-	function createFunc(returnType: string | null): FunctionDescriptor {
-		return {
-			name: 'test_func',
-			range: testRange,
-			parameters: [],
-			returnType,
-			returnStatements: [],
-			raises: [],
-			docstring: 'Test',
-			docstringRange: testRange,
-			hasIO: false,
-			hasGlobalMods: false
-		};
-	}
-
-	/**
-	 * Helper to create a minimal DocstringDescriptor for testing
-	 */
-	function createDocstring(returns: DocstringReturnDescriptor | null): DocstringDescriptor {
-		return {
-			parameters: [],
-			returns,
-			raises: [],
-			notes: null
-		};
-	}
 
 	setup(() => {
 		analyzer = new PythonReturnAnalyzer();
 	});
 
 	test('DSV201: Should detect real return type mismatch', () => {
-		const func = createFunc('dict');
-		const docstring = createDocstring({
-			type: 'list',
-			description: 'User information'
+		const func = createTestFunction({ returnType: 'dict' });
+		const docstring = createTestDocstring({
+			returnType: 'list',
+			returnDescription: 'User information'
 		});
 
 		const diagnostics = analyzer.analyze(func, docstring);
@@ -60,10 +31,10 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 	});
 
 	test('DSV201: Should not report when types match', () => {
-		const func = createFunc('dict');
-		const docstring = createDocstring({
-			type: 'dict',
-			description: 'User information'
+		const func = createTestFunction({ returnType: 'dict' });
+		const docstring = createTestDocstring({
+			returnType: 'dict',
+			returnDescription: 'User information'
 		});
 
 		const diagnostics = analyzer.analyze(func, docstring);
@@ -81,10 +52,10 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 		];
 
 		for (const { code, doc } of testCases) {
-			const func = createFunc(code);
-			const docstring = createDocstring({
-				type: doc,
-				description: 'Result'
+			const func = createTestFunction({ returnType: code });
+			const docstring = createTestDocstring({
+				returnType: doc,
+				returnDescription: 'Result'
 			});
 
 			const diagnostics = analyzer.analyze(func, docstring);
@@ -99,10 +70,10 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 	});
 
 	test('DSV201: Should normalize Optional syntax', () => {
-		const func = createFunc('int | None');
-		const docstring = createDocstring({
-			type: 'Optional[int]',
-			description: 'Value'
+		const func = createTestFunction({ returnType: 'int | None' });
+		const docstring = createTestDocstring({
+			returnType: 'Optional[int]',
+			returnDescription: 'Value'
 		});
 
 		const diagnostics = analyzer.analyze(func, docstring);
@@ -112,10 +83,10 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 	});
 
 	test('DSV201: Should be case-insensitive', () => {
-		const func = createFunc('str');
-		const docstring = createDocstring({
-			type: 'STR',
-			description: 'Result'
+		const func = createTestFunction({ returnType: 'str' });
+		const docstring = createTestDocstring({
+			returnType: 'STR',
+			returnDescription: 'Result'
 		});
 
 		const diagnostics = analyzer.analyze(func, docstring);
@@ -125,10 +96,10 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 	});
 
 	test('DSV201: Should skip when code has no return type', () => {
-		const func = createFunc(null);
-		const docstring = createDocstring({
-			type: 'dict',
-			description: 'Result'
+		const func = createTestFunction({ returnType: null });
+		const docstring = createTestDocstring({
+			returnType: 'dict',
+			returnDescription: 'Result'
 		});
 
 		const diagnostics = analyzer.analyze(func, docstring);
@@ -138,10 +109,10 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 	});
 
 	test('DSV201: Should skip when docstring has no return type', () => {
-		const func = createFunc('dict');
-		const docstring = createDocstring({
-			type: null,
-			description: 'Result'
+		const func = createTestFunction({ returnType: 'dict' });
+		const docstring = createTestDocstring({
+			returnType: null,
+			returnDescription: 'Result'
 		});
 
 		const diagnostics = analyzer.analyze(func, docstring);
@@ -151,8 +122,8 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 	});
 
 	test('DSV201: Should skip when docstring has no returns section', () => {
-		const func = createFunc('dict');
-		const docstring = createDocstring(null);
+		const func = createTestFunction({ returnType: 'dict' });
+		const docstring = createTestDocstring({});  // No returns section
 
 		const diagnostics = analyzer.analyze(func, docstring);
 		const typeMismatch = diagnostics.filter(d => d.code === DiagnosticCode.RETURN_TYPE_MISMATCH);
@@ -161,10 +132,10 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 	});
 
 	test('DSV201: Should handle complex types', () => {
-		const func = createFunc('list[int]');
-		const docstring = createDocstring({
-			type: 'list[int]',
-			description: 'List of numbers'
+		const func = createTestFunction({ returnType: 'list[int]' });
+		const docstring = createTestDocstring({
+			returnType: 'list[int]',
+			returnDescription: 'List of numbers'
 		});
 
 		const diagnostics = analyzer.analyze(func, docstring);
@@ -174,10 +145,10 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 	});
 
 	test('DSV201: Should detect mismatch in complex types', () => {
-		const func = createFunc('list[int]');
-		const docstring = createDocstring({
-			type: 'list[str]',
-			description: 'List of strings'
+		const func = createTestFunction({ returnType: 'list[int]' });
+		const docstring = createTestDocstring({
+			returnType: 'list[str]',
+			returnDescription: 'List of strings'
 		});
 
 		const diagnostics = analyzer.analyze(func, docstring);
@@ -189,10 +160,10 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 	});
 
 	test('DSV201: Should handle dict type variations', () => {
-		const func = createFunc('dict[str, int]');
-		const docstring = createDocstring({
-			type: 'dict[str, int]',
-			description: 'Mapping'
+		const func = createTestFunction({ returnType: 'dict[str, int]' });
+		const docstring = createTestDocstring({
+			returnType: 'dict[str, int]',
+			returnDescription: 'Mapping'
 		});
 
 		const diagnostics = analyzer.analyze(func, docstring);
@@ -202,10 +173,10 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 	});
 
 	test('DSV201: Should normalize float type', () => {
-		const func = createFunc('float');
-		const docstring = createDocstring({
-			type: 'float',
-			description: 'Average'
+		const func = createTestFunction({ returnType: 'float' });
+		const docstring = createTestDocstring({
+			returnType: 'float',
+			returnDescription: 'Average'
 		});
 
 		const diagnostics = analyzer.analyze(func, docstring);
@@ -215,10 +186,10 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 	});
 
 	test('DSV201: Should detect mismatch between float and int', () => {
-		const func = createFunc('float');
-		const docstring = createDocstring({
-			type: 'int',
-			description: 'Result'
+		const func = createTestFunction({ returnType: 'float' });
+		const docstring = createTestDocstring({
+			returnType: 'int',
+			returnDescription: 'Result'
 		});
 
 		const diagnostics = analyzer.analyze(func, docstring);
@@ -229,10 +200,10 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 
 	test('DSV201: Should handle aliases in return types', () => {
 		// Code uses 'str', docstring uses 'string' - should match
-		const func = createFunc('str');
-		const docstring = createDocstring({
-			type: 'string',
-			description: 'Result'
+		const func = createTestFunction({ returnType: 'str' });
+		const docstring = createTestDocstring({
+			returnType: 'string',
+			returnDescription: 'Result'
 		});
 
 		const diagnostics = analyzer.analyze(func, docstring);
@@ -243,10 +214,10 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 
 	test('DSV201: Should handle Optional return types', () => {
 		// Code: str | None, Doc: Optional[str] - should match
-		const func = createFunc('str | None');
-		const docstring = createDocstring({
-			type: 'Optional[str]',
-			description: 'Result or None'
+		const func = createTestFunction({ returnType: 'str | None' });
+		const docstring = createTestDocstring({
+			returnType: 'Optional[str]',
+			returnDescription: 'Result or None'
 		});
 
 		const diagnostics = analyzer.analyze(func, docstring);
@@ -257,10 +228,10 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 
 	test('DSV201: Should detect real-world list vs dict mismatch', () => {
 		// This is from the example file: returns list but documents dict
-		const func = createFunc('list');
-		const docstring = createDocstring({
-			type: 'dict',
-			description: 'User information'
+		const func = createTestFunction({ returnType: 'list' });
+		const docstring = createTestDocstring({
+			returnType: 'dict',
+			returnDescription: 'User information'
 		});
 
 		const diagnostics = analyzer.analyze(func, docstring);
