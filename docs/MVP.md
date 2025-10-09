@@ -103,7 +103,7 @@
 
 ### Polish Python
 
-- [ ] Sphinx Docstring Parser
+- [x] Sphinx Docstring Parser
   - Parse `:param:`, `:type:`, `:returns:`, `:raises:`
   - Auto-detect Google vs Sphinx style
 - [x] Side Effects Analyzer

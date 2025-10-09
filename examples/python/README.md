@@ -3,7 +3,48 @@
 This folder contains example Python files that demonstrate different types of
 docstring mismatches detected by the extension.
 
+## Docstring Styles
+
+The extension supports both Google-style and Sphinx-style docstrings with automatic detection.
+
+### Google-style Example
+
+```python
+def add(x, y):
+    """Add two numbers.
+    
+    Args:
+        x (int): First number
+        y (int): Second number
+    
+    Returns:
+        int: Sum of the numbers
+    """
+    return x + y
+```
+
+### Sphinx-style Example
+
+```python
+def add(x, y):
+    """Add two numbers.
+    
+    :param x: First number
+    :type x: int
+    :param y: Second number
+    :type y: int
+    :returns: Sum of the numbers
+    :rtype: int
+    """
+    return x + y
+```
+
 ## Files
+
+### General Examples
+
+- **sphinx_style.py** - Examples of well-documented functions with Sphinx-style docstrings
+- **sphinx_validation_test.py** - Comprehensive test file demonstrating all validation rules with Sphinx-style docstrings
 
 ### Signature Analyzer (DSV1xx)
 

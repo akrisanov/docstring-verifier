@@ -3,7 +3,7 @@ import { Logger } from './utils/logger';
 import { isEnabled, getDocstringStyle } from './utils/config';
 import { IParser } from './parsers/base';
 import { PythonParser } from './parsers/python/pythonParser';
-import { GoogleDocstringParser, IDocstringParser, detectFileDocstringStyle } from './docstring/python';
+import { GoogleDocstringParser, SphinxDocstringParser, IDocstringParser, detectFileDocstringStyle } from './docstring/python';
 import { IAnalyzer } from './analyzers/base';
 import { PythonSignatureAnalyzer, PythonReturnAnalyzer, PythonExceptionAnalyzer, PythonSideEffectsAnalyzer } from './analyzers/python';
 
@@ -11,7 +11,8 @@ import { PythonSignatureAnalyzer, PythonReturnAnalyzer, PythonExceptionAnalyzer,
 let logger: Logger;
 let diagnosticCollection: vscode.DiagnosticCollection;
 let pythonParser: IParser;
-let docstringParser: IDocstringParser;
+let googleDocstringParser: IDocstringParser;
+let sphinxDocstringParser: IDocstringParser;
 let signatureAnalyzer: IAnalyzer;
 let returnAnalyzer: IAnalyzer;
 let exceptionAnalyzer: IAnalyzer;
@@ -39,12 +40,13 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Initialize parsers
 	pythonParser = new PythonParser(context);
-	docstringParser = new GoogleDocstringParser();
+	googleDocstringParser = new GoogleDocstringParser();
+	sphinxDocstringParser = new SphinxDocstringParser();
 	signatureAnalyzer = new PythonSignatureAnalyzer();
 	returnAnalyzer = new PythonReturnAnalyzer();
 	exceptionAnalyzer = new PythonExceptionAnalyzer();
 	sideEffectsAnalyzer = new PythonSideEffectsAnalyzer();
-	logger.info('Initialized PythonParser, GoogleDocstringParser, and all analyzers');
+	logger.info('Initialized PythonParser, GoogleDocstringParser, SphinxDocstringParser, and all analyzers');
 
 	// Register document save listener
 	// Note: We analyze on save rather than on every change to avoid performance issues
@@ -208,12 +210,9 @@ async function analyzeDocument(document: vscode.TextDocument): Promise<void> {
 			logger.debug(`Using configured docstring style: ${detectedStyle}`);
 		}
 
-		// TODO: Support Sphinx parser in addition to Google
-		// For now, we only support Google-style parsing
-		if (detectedStyle === 'sphinx') {
-			logger.info('Sphinx-style docstrings detected, but parser not yet implemented');
-			// Fall back to Google parser for now
-		}
+		// Select the appropriate parser based on detected style
+		const docstringParser = detectedStyle === 'sphinx' ? sphinxDocstringParser : googleDocstringParser;
+		logger.debug(`Using ${detectedStyle} docstring parser`);
 
 		// Step 3: Parse docstrings and analyze
 		const diagnostics: vscode.Diagnostic[] = [];

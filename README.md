@@ -22,11 +22,10 @@ Sneak peek of the extension prototype in action:
 
 ## Limitations
 
-- Python only supports Google and Sphinx docstring formats (not NumPy)
+- Python only supports Google and Sphinx docstring formats (not NumPy-style)
 - Basic type checking (doesn't handle complex generics or custom types)
 - TypeScript/JavaScript support not yet implemented (architecture ready)
 - Quick Fixes (auto-generate docstrings) not yet implemented
-- Side effects detection (DSV401) not yet implemented
 - No integration with type checkers (mypy, pyright)
 
 ## Architecture
@@ -70,11 +69,13 @@ Simple high-level flow:
 - **5 Return Validation Rules**: Type mismatch, Missing documentation, Void functions, Multiple returns, Generator yields
 - **4 Parameter Validation Rules**: Missing in code/docstring, Type mismatch, Optional mismatch
 - **2 Exception Validation Rules**: Missing documentation, Documented but not raised
-- **Auto-detection**: Automatically detects Google vs Sphinx docstring style
+- **1 Side Effects Rule**: Detects undocumented I/O, print statements, global modifications
+- **Docstring Styles**: Supports both Google-style and Sphinx-style docstrings
+- **Auto-detection**: Automatically detects Google vs Sphinx docstring style per file
 - **Multi-language Ready**: Python (Google/Sphinx) implemented, TypeScript architecture ready
 - **Generator Support**: Detects yield statements and validates Yields vs Returns sections
-- **Diagnostic Codes**: DSV101-302 for filtering and identification
-- **Performance Optimized**: Caching and sampling for fast analysis
+- **Diagnostic Codes**: DSV101-401 for filtering and identification
+- **Performance Optimized**: Caching, sampling, and async processing for fast analysis
 
 For detailed architecture, see [Design.md](./docs/Design.md).
 
