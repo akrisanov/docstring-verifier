@@ -4,7 +4,7 @@ import { IParser } from './parsers/base';
 import { PythonParser } from './parsers/python/pythonParser';
 import { GoogleDocstringParser, IDocstringParser } from './docstring/python';
 import { IAnalyzer } from './analyzers/base';
-import { PythonSignatureAnalyzer } from './analyzers/python';
+import { PythonSignatureAnalyzer, PythonReturnAnalyzer } from './analyzers/python';
 
 // Global instances
 let logger: Logger;
@@ -12,6 +12,7 @@ let diagnosticCollection: vscode.DiagnosticCollection;
 let pythonParser: IParser;
 let docstringParser: IDocstringParser;
 let signatureAnalyzer: IAnalyzer;
+let returnAnalyzer: IAnalyzer;
 
 /**
  * Called when the extension is activated.
@@ -30,7 +31,8 @@ export function activate(context: vscode.ExtensionContext) {
 	pythonParser = new PythonParser(context);
 	docstringParser = new GoogleDocstringParser();
 	signatureAnalyzer = new PythonSignatureAnalyzer();
-	logger.info('Initialized PythonParser, GoogleDocstringParser, and PythonSignatureAnalyzer');
+	returnAnalyzer = new PythonReturnAnalyzer();
+	logger.info('Initialized PythonParser, GoogleDocstringParser, PythonSignatureAnalyzer, and PythonReturnAnalyzer');
 
 	// Register document change listener
 	context.subscriptions.push(
@@ -121,8 +123,11 @@ async function analyzeDocument(document: vscode.TextDocument): Promise<void> {
 			const parsedDocstring = docstringParser.parse(func.docstring);
 			logger.trace(`Parsed docstring for '${func.name}': ${parsedDocstring.parameters.length} params documented`);
 
-			// Use analyzer to validate parameters
-			const funcDiagnostics = signatureAnalyzer.analyze(func, parsedDocstring);
+			// Use analyzers to validate parameters and returns
+			const funcDiagnostics = [
+				...signatureAnalyzer.analyze(func, parsedDocstring),
+				...returnAnalyzer.analyze(func, parsedDocstring)
+			];
 			diagnostics.push(...funcDiagnostics);
 		}
 

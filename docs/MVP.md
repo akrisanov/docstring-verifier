@@ -76,11 +76,11 @@
   - [x] DSV102: Parameter in code but not in docstring
   - [x] DSV103: Parameter type mismatch
   - [x] DSV104: Optional/required mismatch
-- [ ] Return Analyzer
-  - DSV201: Return type mismatch
-  - DSV202: Missing return in docstring
-  - DSV203: Docstring says returns, but function is void
-  - Handle multiple returns, yield, None
+- [x] Return Analyzer
+  - [x] DSV201: Return type mismatch
+  - [ ] DSV202: Missing return in docstring
+  - [ ] DSV203: Docstring says returns, but function is void
+  - [ ] Handle multiple returns, yield, None
 - [ ] Exception Analyzer
   - DSV301: Exception raised but not documented
   - DSV302: Exception documented but not raised

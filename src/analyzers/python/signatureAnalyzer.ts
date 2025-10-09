@@ -9,6 +9,7 @@ import { FunctionDescriptor } from '../../parsers/types';
 import { DocstringDescriptor } from '../../docstring/types';
 import { DiagnosticFactory } from '../../diagnostics/factory';
 import { Logger } from '../../utils/logger';
+import { normalizeType } from './typeNormalizer';
 
 /**
  * Analyzes function signatures against docstrings (Python-specific)
@@ -152,8 +153,8 @@ export class PythonSignatureAnalyzer implements IAnalyzer {
 			// Compare types if both are present
 			if (codeParam.type && docParam.type) {
 				// Normalize types for comparison
-				const normalizedCodeType = this.normalizeType(codeParam.type);
-				const normalizedDocType = this.normalizeType(docParam.type);
+				const normalizedCodeType = normalizeType(codeParam.type);
+				const normalizedDocType = normalizeType(docParam.type);
 
 				if (normalizedCodeType !== normalizedDocType) {
 					const diagnostic = DiagnosticFactory.createParamTypeMismatch(
@@ -224,60 +225,6 @@ export class PythonSignatureAnalyzer implements IAnalyzer {
 		}
 
 		return diagnostics;
-	}
-
-	/**
-	 * Normalize type annotation for comparison.
-	 * Handles common type aliases and syntax variations.
-	 *
-	 * TODO (Post-MVP): Handle nested generics properly
-	 * - Optional[Dict[str, int]] currently breaks due to greedy regex
-	 * - Union[List[int], Dict[str, str]] not supported
-	 * - Need proper bracket matching with stack-based parser
-	 *
-	 * TODO (Post-MVP): Improve alias replacement order
-	 * - Current order misses aliases inside Optional/Union
-	 * - Example: Optional[Integer] becomes "integer|none" not "int|none"
-	 * - Should expand generics first, then apply aliases to all parts
-	 *
-	 * TODO (Post-MVP): Support Union[A, B] syntax
-	 * - Currently only handles A | B pipe syntax
-	 * - Union[int, str] vs int | str should be equivalent
-	 */
-	private normalizeType(type: string): string {
-		if (!type) {
-			return '';
-		}
-
-		let normalized = type.toLowerCase().trim();
-
-		// Check for common type aliases
-		const aliases: Record<string, string> = {
-			string: 'str',
-			integer: 'int',
-			boolean: 'bool',
-			float: 'float',
-			dictionary: 'dict',
-			list: 'list',
-			tuple: 'tuple',
-			set: 'set',
-		};
-
-		if (aliases[normalized]) {
-			return aliases[normalized];
-		}
-
-		// Handle Optional[T] -> T | None (simple cases only, no nested brackets)
-		// TODO: This breaks on Optional[Dict[str, int]] - stops at first ']'
-		normalized = normalized.replace(/optional\[(.*?)\]/g, '$1 | none');
-
-		// Normalize union type spacing
-		normalized = normalized.replace(/\s*\|\s*/g, '|');
-
-		// Remove typing module prefix
-		normalized = normalized.replace(/typing\./g, '');
-
-		return normalized;
 	}
 
 	/**

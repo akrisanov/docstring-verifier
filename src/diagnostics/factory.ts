@@ -104,4 +104,23 @@ export class DiagnosticFactory {
 		diagnostic.source = DiagnosticFactory.SOURCE;
 		return diagnostic;
 	}
+
+	/**
+	 * Create diagnostic for return type mismatch (DSV201)
+	 */
+	static createReturnTypeMismatch(
+		functionName: string,
+		codeType: string,
+		docType: string,
+		range: vscode.Range
+	): vscode.Diagnostic {
+		const diagnostic = new vscode.Diagnostic(
+			range,
+			`Return type mismatch in function '${functionName}': code has '${codeType}', docstring has '${docType}'`,
+			vscode.DiagnosticSeverity.Warning
+		);
+		diagnostic.code = DiagnosticCode.RETURN_TYPE_MISMATCH;
+		diagnostic.source = DiagnosticFactory.SOURCE;
+		return diagnostic;
+	}
 }
