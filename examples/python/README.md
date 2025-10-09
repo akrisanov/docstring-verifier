@@ -15,6 +15,7 @@ docstring mismatches detected by the extension.
 ### Return Analyzer (DSV2xx)
 
 - **dsv201_return_mismatch.py** - DSV201: Return type mismatch between code and docstring
+- **dsv202_missing_return.py** - DSV202: Function has return type but no Returns section in docstring
 
 ### Exception Analyzer (DSV3xx)
 

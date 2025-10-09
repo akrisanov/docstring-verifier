@@ -16,7 +16,7 @@ import { normalizeType } from './typeNormalizer';
  *
  * Checks:
  * - DSV201: Return type mismatch
- * - DSV202: Missing return in docstring (future)
+ * - DSV202: Missing return in docstring
  * - DSV203: Docstring says returns, but function is void (future)
  */
 export class PythonReturnAnalyzer implements IAnalyzer {
@@ -35,6 +35,9 @@ export class PythonReturnAnalyzer implements IAnalyzer {
 
 		// Check for return type mismatch (DSV201)
 		diagnostics.push(...this.checkReturnTypeMismatch(func, docstring, range));
+
+		// Check for missing return in docstring (DSV202)
+		diagnostics.push(...this.checkReturnMissingInDocstring(func, docstring, range));
 
 		return diagnostics;
 	}
@@ -72,6 +75,47 @@ export class PythonReturnAnalyzer implements IAnalyzer {
 				`code='${func.returnType}', doc='${docstring.returns.type}'`
 			);
 		}
+
+		return diagnostics;
+	}
+
+	/**
+	 * Check for missing return in docstring (DSV202)
+	 *
+	 * Reports when function has a return type in code but no Returns section in docstring.
+	 * Skip if:
+	 * - Function has no return type
+	 * - Return type is None (void function)
+	 */
+	private checkReturnMissingInDocstring(
+		func: FunctionDescriptor,
+		docstring: DocstringDescriptor,
+		range: vscode.Range
+	): vscode.Diagnostic[] {
+		const diagnostics: vscode.Diagnostic[] = [];
+
+		// Skip if function has no return type or returns None
+		if (!func.returnType || func.returnType.toLowerCase() === 'none') {
+			return diagnostics;
+		}
+
+		// Skip if docstring has a returns section
+		if (docstring.returns) {
+			return diagnostics;
+		}
+
+		// Function has a return type but no Returns section in docstring
+		const diagnostic = DiagnosticFactory.createReturnMissingInDocstring(
+			func.name,
+			func.returnType,
+			range
+		);
+		diagnostics.push(diagnostic);
+
+		this.logger.debug(
+			`DSV202: Missing return in docstring for ${func.name}: ` +
+			`code returns '${func.returnType}' but no Returns section in docstring`
+		);
 
 		return diagnostics;
 	}

@@ -123,4 +123,22 @@ export class DiagnosticFactory {
 		diagnostic.source = DiagnosticFactory.SOURCE;
 		return diagnostic;
 	}
+
+	/**
+	 * Create diagnostic for missing return in docstring (DSV202)
+	 */
+	static createReturnMissingInDocstring(
+		functionName: string,
+		returnType: string,
+		range: vscode.Range
+	): vscode.Diagnostic {
+		const diagnostic = new vscode.Diagnostic(
+			range,
+			`Function '${functionName}' returns '${returnType}' but return is not documented in docstring`,
+			vscode.DiagnosticSeverity.Warning
+		);
+		diagnostic.code = DiagnosticCode.RETURN_MISSING_IN_DOCSTRING;
+		diagnostic.source = DiagnosticFactory.SOURCE;
+		return diagnostic;
+	}
 }

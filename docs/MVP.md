@@ -78,7 +78,7 @@
   - [x] DSV104: Optional/required mismatch
 - [x] Return Analyzer
   - [x] DSV201: Return type mismatch
-  - [ ] DSV202: Missing return in docstring
+  - [x] DSV202: Missing return in docstring
   - [ ] DSV203: Docstring says returns, but function is void
   - [ ] Handle multiple returns, yield, None
 - [ ] Exception Analyzer
@@ -115,10 +115,6 @@
   - `docstringVerifier.logLevel`
   - `docstringVerifier.pythonPath`
   - `docstringVerifier.docstringStyle`
-- [ ] Unit Tests
-  - Test fixtures for valid/invalid cases
-  - Parser tests
-  - Analyzer tests
 
 **Milestone:** Polished Python support with 2 docstring formats and 4 validation rules
 

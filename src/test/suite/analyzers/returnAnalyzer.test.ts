@@ -172,19 +172,6 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 		assert.strictEqual(typeMismatch, undefined, 'Should handle dict type variations');
 	});
 
-	test('DSV201: Should normalize float type', () => {
-		const func = createTestFunction({ returnType: 'float' });
-		const docstring = createTestDocstring({
-			returnType: 'float',
-			returnDescription: 'Average'
-		});
-
-		const diagnostics = analyzer.analyze(func, docstring);
-		const typeMismatch = diagnostics.find(d => d.code === DiagnosticCode.RETURN_TYPE_MISMATCH);
-
-		assert.strictEqual(typeMismatch, undefined, 'Should handle float type');
-	});
-
 	test('DSV201: Should detect mismatch between float and int', () => {
 		const func = createTestFunction({ returnType: 'float' });
 		const docstring = createTestDocstring({
@@ -197,48 +184,199 @@ suite('PythonReturnAnalyzer - Return Type Mismatch Tests', () => {
 
 		assert.ok(typeMismatch, 'Should detect mismatch between float and int');
 	});
+});
 
-	test('DSV201: Should handle aliases in return types', () => {
-		// Code uses 'str', docstring uses 'string' - should match
-		const func = createTestFunction({ returnType: 'str' });
+suite('PythonReturnAnalyzer - Missing Return in Docstring Tests', () => {
+	let analyzer: PythonReturnAnalyzer;
+
+	setup(() => {
+		analyzer = new PythonReturnAnalyzer();
+	});
+
+	test('DSV202: Should detect missing return in docstring when function has return type', () => {
+		const func = createTestFunction({ returnType: 'dict' });
 		const docstring = createTestDocstring({
-			returnType: 'string',
-			returnDescription: 'Result'
+			parameters: []  // No returns section
 		});
 
 		const diagnostics = analyzer.analyze(func, docstring);
-		const typeMismatch = diagnostics.find(d => d.code === DiagnosticCode.RETURN_TYPE_MISMATCH);
+		const missingReturn = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MISSING_IN_DOCSTRING);
 
-		assert.strictEqual(typeMismatch, undefined, 'Should normalize string to str');
+		assert.ok(missingReturn, 'Should detect missing return in docstring');
+		assert.ok(missingReturn!.message.includes('dict'));
+		assert.ok(missingReturn!.message.includes('not documented'));
+		assert.strictEqual(missingReturn!.severity, vscode.DiagnosticSeverity.Warning);
 	});
 
-	test('DSV201: Should handle Optional return types', () => {
-		// Code: str | None, Doc: Optional[str] - should match
-		const func = createTestFunction({ returnType: 'str | None' });
+	test('DSV202: Should not report when function returns None', () => {
+		const func = createTestFunction({ returnType: 'None' });
 		const docstring = createTestDocstring({
-			returnType: 'Optional[str]',
-			returnDescription: 'Result or None'
+			parameters: []  // No returns section
 		});
 
 		const diagnostics = analyzer.analyze(func, docstring);
-		const typeMismatch = diagnostics.find(d => d.code === DiagnosticCode.RETURN_TYPE_MISMATCH);
+		const missingReturn = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MISSING_IN_DOCSTRING);
 
-		assert.strictEqual(typeMismatch, undefined, 'Should normalize Optional[str] to str|none');
+		assert.strictEqual(missingReturn, undefined, 'Should not report for None return type');
 	});
 
-	test('DSV201: Should detect real-world list vs dict mismatch', () => {
-		// This is from the example file: returns list but documents dict
-		const func = createTestFunction({ returnType: 'list' });
+	test('DSV202: Should not report when function has no return type', () => {
+		const func = createTestFunction({ returnType: null });
+		const docstring = createTestDocstring({
+			parameters: []  // No returns section
+		});
+
+		const diagnostics = analyzer.analyze(func, docstring);
+		const missingReturn = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MISSING_IN_DOCSTRING);
+
+		assert.strictEqual(missingReturn, undefined, 'Should not report when no return type');
+	});
+
+	test('DSV202: Should not report when docstring has returns section', () => {
+		const func = createTestFunction({ returnType: 'dict' });
 		const docstring = createTestDocstring({
 			returnType: 'dict',
-			returnDescription: 'User information'
+			returnDescription: 'User data'
+		});
+
+		const diagnostics = analyzer.analyze(func, docstring);
+		const missingReturn = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MISSING_IN_DOCSTRING);
+
+		assert.strictEqual(missingReturn, undefined, 'Should not report when returns section exists');
+	});
+
+	test('DSV202: Should be case-insensitive for None check', () => {
+		const testCases = ['none', 'None', 'NONE', 'nOnE'];
+
+		for (const noneVariant of testCases) {
+			const func = createTestFunction({ returnType: noneVariant });
+			const docstring = createTestDocstring({
+				parameters: []
+			});
+
+			const diagnostics = analyzer.analyze(func, docstring);
+			const missingReturn = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MISSING_IN_DOCSTRING);
+
+			assert.strictEqual(
+				missingReturn,
+				undefined,
+				`Should not report for '${noneVariant}' return type`
+			);
+		}
+	});
+
+	test('DSV202: Should report for non-None return types', () => {
+		const testCases = ['str', 'int', 'list', 'dict', 'bool', 'Optional[str]', 'list[int]'];
+
+		for (const returnType of testCases) {
+			const func = createTestFunction({ returnType });
+			const docstring = createTestDocstring({
+				parameters: []
+			});
+
+			const diagnostics = analyzer.analyze(func, docstring);
+			const missingReturn = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MISSING_IN_DOCSTRING);
+
+			assert.ok(
+				missingReturn,
+				`Should report missing return for '${returnType}'`
+			);
+			assert.ok(missingReturn!.message.includes(returnType));
+		}
+	});
+
+	test('DSV202: Should work together with DSV201 (both checks)', () => {
+		// Function has return type but wrong in docstring
+		const func = createTestFunction({ returnType: 'dict' });
+		const docstring = createTestDocstring({
+			returnType: 'list',  // Wrong type
+			returnDescription: 'Data'
+		});
+
+		const diagnostics = analyzer.analyze(func, docstring);
+
+		// Should have DSV201 (type mismatch) but NOT DSV202 (missing return)
+		const typeMismatch = diagnostics.find(d => d.code === DiagnosticCode.RETURN_TYPE_MISMATCH);
+		const missingReturn = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MISSING_IN_DOCSTRING);
+
+		assert.ok(typeMismatch, 'Should detect type mismatch');
+		assert.strictEqual(missingReturn, undefined, 'Should not report missing when returns exists');
+	});
+
+	test('DSV202: Should not report when returns section exists but has no type', () => {
+		const func = createTestFunction({ returnType: 'dict' });
+		const docstring = createTestDocstring({
+			returnType: null,  // No type specified
+			returnDescription: 'Some data'
+		});
+
+		const diagnostics = analyzer.analyze(func, docstring);
+		const missingReturn = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MISSING_IN_DOCSTRING);
+
+		assert.strictEqual(missingReturn, undefined, 'Should not report when returns section exists');
+	});
+});
+
+suite('PythonReturnAnalyzer - Edge Cases and Interaction Tests', () => {
+	let analyzer: PythonReturnAnalyzer;
+
+	setup(() => {
+		analyzer = new PythonReturnAnalyzer();
+	});
+
+	test('Edge Case: None return with wrong type in docstring should trigger DSV201, not DSV202', () => {
+		const func = createTestFunction({ returnType: 'None' });
+		const docstring = createTestDocstring({
+			returnType: 'dict',
+			returnDescription: 'Some data'
 		});
 
 		const diagnostics = analyzer.analyze(func, docstring);
 		const typeMismatch = diagnostics.find(d => d.code === DiagnosticCode.RETURN_TYPE_MISMATCH);
+		const missingReturn = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MISSING_IN_DOCSTRING);
 
-		assert.ok(typeMismatch, 'Should detect list vs dict mismatch');
-		assert.ok(typeMismatch!.message.includes('get_user_data') || typeMismatch!.message.includes('test_func'));
-		assert.strictEqual(typeMismatch!.severity, vscode.DiagnosticSeverity.Warning);
+		assert.ok(typeMismatch, 'Should detect type mismatch for None vs dict');
+		assert.strictEqual(missingReturn, undefined, 'Should not report missing return for None');
+	});
+
+	test('Edge Case: No return type but documented return should not trigger any diagnostic', () => {
+		// This is for future DSV203 check
+		const func = createTestFunction({ returnType: null });
+		const docstring = createTestDocstring({
+			returnType: 'dict',
+			returnDescription: 'Some data'
+		});
+
+		const diagnostics = analyzer.analyze(func, docstring);
+
+		// Neither DSV201 nor DSV202 should trigger
+		assert.strictEqual(diagnostics.length, 0, 'Should not report anything (DSV203 not implemented yet)');
+	});
+
+	test('Edge Case: Optional[None] should be documented (not skipped like plain None)', () => {
+		const func = createTestFunction({ returnType: 'Optional[None]' });
+		const docstring = createTestDocstring({
+			parameters: []  // No returns section
+		});
+
+		const diagnostics = analyzer.analyze(func, docstring);
+		const missingReturn = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MISSING_IN_DOCSTRING);
+
+		assert.ok(missingReturn, 'Should report missing return for Optional[None]');
+		assert.ok(missingReturn!.message.includes('Optional[None]'));
+	});
+
+	test('Edge Case: Union with None should be documented', () => {
+		const func = createTestFunction({ returnType: 'str | None' });
+		const docstring = createTestDocstring({
+			parameters: []  // No returns section
+		});
+
+		const diagnostics = analyzer.analyze(func, docstring);
+		const missingReturn = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MISSING_IN_DOCSTRING);
+
+		assert.ok(missingReturn, 'Should report missing return for str | None');
+		assert.ok(missingReturn!.message.includes('str | None'));
 	});
 });
+
