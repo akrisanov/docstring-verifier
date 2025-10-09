@@ -79,7 +79,7 @@
 - [x] Return Analyzer
   - [x] DSV201: Return type mismatch
   - [x] DSV202: Missing return in docstring
-  - [ ] DSV203: Docstring says returns, but function is void
+  - [x] DSV203: Docstring says returns, but function is void
   - [ ] Handle multiple returns, yield, None
 - [ ] Exception Analyzer
   - DSV301: Exception raised but not documented

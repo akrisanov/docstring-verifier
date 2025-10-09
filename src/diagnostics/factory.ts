@@ -141,4 +141,23 @@ export class DiagnosticFactory {
 		diagnostic.source = DiagnosticFactory.SOURCE;
 		return diagnostic;
 	}
+
+	/**
+	 * Create diagnostic for documented return but void function (DSV203)
+	 */
+	static createReturnDocumentedButVoid(
+		functionName: string,
+		docReturnType: string | null,
+		range: vscode.Range
+	): vscode.Diagnostic {
+		const typeStr = docReturnType ? ` ('${docReturnType}')` : '';
+		const diagnostic = new vscode.Diagnostic(
+			range,
+			`Function '${functionName}' is void but docstring documents a return${typeStr}`,
+			vscode.DiagnosticSeverity.Warning
+		);
+		diagnostic.code = DiagnosticCode.RETURN_DOCUMENTED_BUT_VOID;
+		diagnostic.source = DiagnosticFactory.SOURCE;
+		return diagnostic;
+	}
 }

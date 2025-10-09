@@ -17,7 +17,7 @@ import { normalizeType } from './typeNormalizer';
  * Checks:
  * - DSV201: Return type mismatch
  * - DSV202: Missing return in docstring
- * - DSV203: Docstring says returns, but function is void (future)
+ * - DSV203: Docstring says returns, but function is void
  */
 export class PythonReturnAnalyzer implements IAnalyzer {
 	private logger: Logger;
@@ -38,6 +38,9 @@ export class PythonReturnAnalyzer implements IAnalyzer {
 
 		// Check for missing return in docstring (DSV202)
 		diagnostics.push(...this.checkReturnMissingInDocstring(func, docstring, range));
+
+		// Check for documented return but void function (DSV203)
+		diagnostics.push(...this.checkReturnDocumentedButVoid(func, docstring, range));
 
 		return diagnostics;
 	}
@@ -115,6 +118,47 @@ export class PythonReturnAnalyzer implements IAnalyzer {
 		this.logger.debug(
 			`DSV202: Missing return in docstring for ${func.name}: ` +
 			`code returns '${func.returnType}' but no Returns section in docstring`
+		);
+
+		return diagnostics;
+	}
+
+	/**
+	 * Check for documented return but void function (DSV203)
+	 *
+	 * Reports when function has no return type (or returns None) but docstring has Returns section.
+	 * Skip if:
+	 * - Docstring has no returns section
+	 * - Function has a non-None return type
+	 */
+	private checkReturnDocumentedButVoid(
+		func: FunctionDescriptor,
+		docstring: DocstringDescriptor,
+		range: vscode.Range
+	): vscode.Diagnostic[] {
+		const diagnostics: vscode.Diagnostic[] = [];
+
+		// Skip if docstring has no returns section
+		if (!docstring.returns) {
+			return diagnostics;
+		}
+
+		// Skip if function has a non-None return type
+		if (func.returnType && func.returnType.toLowerCase() !== 'none') {
+			return diagnostics;
+		}
+
+		// Function is void (no return type or returns None) but docstring has Returns section
+		const diagnostic = DiagnosticFactory.createReturnDocumentedButVoid(
+			func.name,
+			docstring.returns.type,
+			range
+		);
+		diagnostics.push(diagnostic);
+
+		this.logger.debug(
+			`DSV203: Documented return but void function for ${func.name}: ` +
+			`function has no return type but docstring has Returns section`
 		);
 
 		return diagnostics;
