@@ -62,6 +62,14 @@ class ReturnDescriptor:
 
 
 @dataclass
+class YieldDescriptor:
+    """Information about a yield statement."""
+
+    type: Optional[str]
+    line: int
+
+
+@dataclass
 class ExceptionDescriptor:
     """Information about a raised exception."""
 
@@ -85,6 +93,9 @@ class FunctionDescriptor:
     parameters: list[ParameterDescriptor]
     return_type: Optional[str]
     return_statements: list[ReturnDescriptor]
+    yield_statements: list[YieldDescriptor]
+    is_generator: bool
+    is_async: bool
     raises: list[ExceptionDescriptor]
     docstring: Optional[str]
     docstring_line_start: Optional[int]
@@ -115,6 +126,9 @@ class FunctionDescriptor:
             "parameters": [dataclass_to_dict(p) for p in self.parameters],
             "returnType": self.return_type,
             "returnStatements": [dataclass_to_dict(r) for r in self.return_statements],
+            "yieldStatements": [dataclass_to_dict(y) for y in self.yield_statements],
+            "isGenerator": self.is_generator,
+            "isAsync": self.is_async,
             "raises": [dataclass_to_dict(e) for e in self.raises],
             "docstring": self.docstring,
             "docstringRange": docstring_range,
@@ -132,6 +146,7 @@ class ASTExtractor(ast.NodeVisitor):
         self.functions: list[FunctionDescriptor] = []
         self.current_function: Optional[ast.FunctionDef] = None
         self.return_statements: list[ReturnDescriptor] = []
+        self.yield_statements: list[YieldDescriptor] = []
         self.exceptions: list[ExceptionDescriptor] = []
         self.has_io = False
         self.has_global_mods = False
@@ -141,6 +156,7 @@ class ASTExtractor(ast.NodeVisitor):
         # Save previous function context
         prev_function = self.current_function
         prev_returns = self.return_statements
+        prev_yields = self.yield_statements
         prev_exceptions = self.exceptions
         prev_has_io = self.has_io
         prev_has_global_mods = self.has_global_mods
@@ -148,6 +164,7 @@ class ASTExtractor(ast.NodeVisitor):
         # Reset for current function
         self.current_function = node
         self.return_statements = []
+        self.yield_statements = []
         self.exceptions = []
         self.has_io = False
         self.has_global_mods = False
@@ -165,6 +182,10 @@ class ASTExtractor(ast.NodeVisitor):
         for child in node.body:
             self.visit(child)
 
+        # Determine if function is a generator
+        is_generator = len(self.yield_statements) > 0
+        is_async = isinstance(node, ast.AsyncFunctionDef)
+
         # Create function info
         func_info = FunctionDescriptor(
             name=node.name,
@@ -175,6 +196,9 @@ class ASTExtractor(ast.NodeVisitor):
             parameters=parameters,
             return_type=return_type,
             return_statements=self.return_statements,
+            yield_statements=self.yield_statements,
+            is_generator=is_generator,
+            is_async=is_async,
             raises=self.exceptions,
             docstring=docstring,
             docstring_line_start=doc_start,
@@ -187,6 +211,7 @@ class ASTExtractor(ast.NodeVisitor):
         # Restore previous context (for nested functions)
         self.current_function = prev_function
         self.return_statements = prev_returns
+        self.yield_statements = prev_yields
         self.exceptions = prev_exceptions
         self.has_io = prev_has_io
         self.has_global_mods = prev_has_global_mods
@@ -200,6 +225,21 @@ class ASTExtractor(ast.NodeVisitor):
         if self.current_function is not None:
             return_type = self._infer_type(node.value) if node.value else "None"
             self.return_statements.append(ReturnDescriptor(type=return_type, line=node.lineno))
+        self.generic_visit(node)
+
+    def visit_Yield(self, node: ast.Yield) -> None:
+        """Visit a yield expression."""
+        if self.current_function is not None:
+            yield_type = self._infer_type(node.value) if node.value else "None"
+            self.yield_statements.append(YieldDescriptor(type=yield_type, line=node.lineno))
+        self.generic_visit(node)
+
+    def visit_YieldFrom(self, node: ast.YieldFrom) -> None:
+        """Visit a yield from expression."""
+        if self.current_function is not None:
+            # yield from yields items from an iterable
+            yield_type = self._infer_type(node.value) if node.value else "None"
+            self.yield_statements.append(YieldDescriptor(type=yield_type, line=node.lineno))
         self.generic_visit(node)
 
     def visit_Raise(self, node: ast.Raise) -> None:

@@ -160,4 +160,40 @@ export class DiagnosticFactory {
 		diagnostic.source = DiagnosticFactory.SOURCE;
 		return diagnostic;
 	}
+
+	/**
+	 * Create diagnostic for multiple inconsistent return types (DSV204)
+	 */
+	static createMultipleInconsistentReturns(
+		functionName: string,
+		returnTypes: string[],
+		range: vscode.Range
+	): vscode.Diagnostic {
+		const uniqueTypes = [...new Set(returnTypes)].join(', ');
+		const diagnostic = new vscode.Diagnostic(
+			range,
+			`Function '${functionName}' has multiple inconsistent return types: ${uniqueTypes}. Consider documenting union type or refactoring.`,
+			vscode.DiagnosticSeverity.Information
+		);
+		diagnostic.code = DiagnosticCode.RETURN_MULTIPLE_INCONSISTENT;
+		diagnostic.source = DiagnosticFactory.SOURCE;
+		return diagnostic;
+	}
+
+	/**
+	 * Create diagnostic for generator that should use Yields instead of Returns (DSV205)
+	 */
+	static createGeneratorShouldYield(
+		functionName: string,
+		range: vscode.Range
+	): vscode.Diagnostic {
+		const diagnostic = new vscode.Diagnostic(
+			range,
+			`Generator function '${functionName}' should use 'Yields' section in docstring, not 'Returns'`,
+			vscode.DiagnosticSeverity.Warning
+		);
+		diagnostic.code = DiagnosticCode.GENERATOR_SHOULD_YIELD;
+		diagnostic.source = DiagnosticFactory.SOURCE;
+		return diagnostic;
+	}
 }

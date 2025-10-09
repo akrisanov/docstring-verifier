@@ -21,6 +21,14 @@ export interface ReturnDescriptor {
 }
 
 /**
+ * Describes a yield statement found in code (for generators).
+ */
+export interface YieldDescriptor {
+	type: string | null;
+	line: number;
+}
+
+/**
  * Describes an exception raised in code.
  */
 export interface ExceptionDescriptor {
@@ -38,6 +46,9 @@ export interface FunctionDescriptor {
 	parameters: ParameterDescriptor[];
 	returnType: string | null;
 	returnStatements: ReturnDescriptor[];
+	yieldStatements: YieldDescriptor[];
+	isGenerator: boolean;
+	isAsync: boolean;
 	raises: ExceptionDescriptor[];
 	docstring: string | null;
 	docstringRange: vscode.Range | null;

@@ -465,4 +465,266 @@ suite('PythonReturnAnalyzer - Documented Return But Void Function Tests', () => 
 	});
 });
 
+suite('PythonReturnAnalyzer - Multiple Returns and Generators Tests', () => {
+	let analyzer: PythonReturnAnalyzer;
+
+	setup(() => {
+		analyzer = new PythonReturnAnalyzer();
+	});
+
+	test('DSV204: Should detect multiple inconsistent return types', () => {
+		const func = createTestFunction({
+			returnType: 'str | int',
+			returnStatements: [
+				{ type: 'str', line: 5 },
+				{ type: 'int', line: 8 },
+				{ type: 'bool', line: 12 }
+			]
+		});
+		const docstring = createTestDocstring({
+			returnType: 'str | int',
+			returnDescription: 'Result'
+		});
+
+		const diagnostics = analyzer.analyze(func, docstring);
+		const inconsistent = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MULTIPLE_INCONSISTENT);
+
+		assert.ok(inconsistent, 'Should detect multiple inconsistent return types');
+		assert.ok(inconsistent!.message.includes('str'));
+		assert.ok(inconsistent!.message.includes('int'));
+		assert.ok(inconsistent!.message.includes('bool'));
+		assert.strictEqual(inconsistent!.severity, vscode.DiagnosticSeverity.Information);
+	});
+
+	test('DSV204: Should not report when all return types are the same', () => {
+		const func = createTestFunction({
+			returnType: 'str',
+			returnStatements: [
+				{ type: 'str', line: 5 },
+				{ type: 'str', line: 8 },
+				{ type: 'str', line: 12 }
+			]
+		});
+		const docstring = createTestDocstring({
+			returnType: 'str',
+			returnDescription: 'Result'
+		});
+
+		const diagnostics = analyzer.analyze(func, docstring);
+		const inconsistent = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MULTIPLE_INCONSISTENT);
+
+		assert.strictEqual(inconsistent, undefined, 'Should not report when all types are the same');
+	});
+
+	test('DSV204: Should normalize types before comparison', () => {
+		const func = createTestFunction({
+			returnType: 'str',
+			returnStatements: [
+				{ type: 'str', line: 5 },
+				{ type: 'string', line: 8 },
+				{ type: 'STR', line: 12 }
+			]
+		});
+		const docstring = createTestDocstring({
+			returnType: 'str',
+			returnDescription: 'Result'
+		});
+
+		const diagnostics = analyzer.analyze(func, docstring);
+		const inconsistent = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MULTIPLE_INCONSISTENT);
+
+		assert.strictEqual(inconsistent, undefined, 'Should normalize types before comparison');
+	});
+
+	test('DSV204: Should skip when function has less than 2 returns', () => {
+		const func = createTestFunction({
+			returnType: 'str',
+			returnStatements: [
+				{ type: 'str', line: 5 }
+			]
+		});
+		const docstring = createTestDocstring({
+			returnType: 'str',
+			returnDescription: 'Result'
+		});
+
+		const diagnostics = analyzer.analyze(func, docstring);
+		const inconsistent = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MULTIPLE_INCONSISTENT);
+
+		assert.strictEqual(inconsistent, undefined, 'Should not check with less than 2 returns');
+	});
+
+	test('DSV204: Should skip for generator functions', () => {
+		const func = createTestFunction({
+			returnType: 'Generator[str, None, None]',
+			returnStatements: [
+				{ type: 'str', line: 5 },
+				{ type: 'int', line: 8 }
+			],
+			isGenerator: true,
+			yieldStatements: [
+				{ type: 'str', line: 6 }
+			]
+		});
+		const docstring = createTestDocstring({
+			returnType: 'Generator[str, None, None]',
+			returnDescription: 'Yields values'
+		});
+
+		const diagnostics = analyzer.analyze(func, docstring);
+		const inconsistent = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MULTIPLE_INCONSISTENT);
+
+		assert.strictEqual(inconsistent, undefined, 'Should skip for generators');
+	});
+
+	test('DSV205: Should detect generator with Returns instead of Yields', () => {
+		const func = createTestFunction({
+			isGenerator: true,
+			returnType: 'Generator[int, None, None]',
+			yieldStatements: [
+				{ type: 'int', line: 5 }
+			]
+		});
+		const docstring = createTestDocstring({
+			returnType: 'Generator[int, None, None]',
+			returnDescription: 'Yields values'
+		});
+
+		const diagnostics = analyzer.analyze(func, docstring);
+		const generatorIssue = diagnostics.find(d => d.code === DiagnosticCode.GENERATOR_SHOULD_YIELD);
+
+		assert.ok(generatorIssue, 'Should detect generator with Returns section');
+		assert.ok(generatorIssue!.message.includes('Yields'));
+		assert.ok(generatorIssue!.message.includes('Generator'));
+		assert.strictEqual(generatorIssue!.severity, vscode.DiagnosticSeverity.Warning);
+	});
+
+	test('DSV205: Should not report when generator has no Returns section', () => {
+		const func = createTestFunction({
+			isGenerator: true,
+			returnType: 'Generator[int, None, None]',
+			yieldStatements: [
+				{ type: 'int', line: 5 }
+			]
+		});
+		const docstring = createTestDocstring({
+			parameters: []  // No returns section
+		});
+
+		const diagnostics = analyzer.analyze(func, docstring);
+		const generatorIssue = diagnostics.find(d => d.code === DiagnosticCode.GENERATOR_SHOULD_YIELD);
+
+		assert.strictEqual(generatorIssue, undefined, 'Should not report when no Returns section');
+	});
+
+	test('DSV205: Should not report for non-generator functions', () => {
+		const func = createTestFunction({
+			isGenerator: false,
+			returnType: 'list[int]',
+			returnStatements: [
+				{ type: 'list', line: 5 }
+			]
+		});
+		const docstring = createTestDocstring({
+			returnType: 'list[int]',
+			returnDescription: 'List of values'
+		});
+
+		const diagnostics = analyzer.analyze(func, docstring);
+		const generatorIssue = diagnostics.find(d => d.code === DiagnosticCode.GENERATOR_SHOULD_YIELD);
+
+		assert.strictEqual(generatorIssue, undefined, 'Should not report for non-generators');
+	});
+
+	test('DSV204 + DSV205: Multiple checks should work independently', () => {
+		// Generator with inconsistent returns should only report DSV205
+		const func = createTestFunction({
+			isGenerator: true,
+			returnType: 'Generator[str, None, None]',
+			returnStatements: [
+				{ type: 'str', line: 5 },
+				{ type: 'int', line: 8 }
+			],
+			yieldStatements: [
+				{ type: 'str', line: 6 }
+			]
+		});
+		const docstring = createTestDocstring({
+			returnType: 'Generator[str, None, None]',
+			returnDescription: 'Values'
+		});
+
+		const diagnostics = analyzer.analyze(func, docstring);
+		const generatorIssue = diagnostics.find(d => d.code === DiagnosticCode.GENERATOR_SHOULD_YIELD);
+		const inconsistent = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MULTIPLE_INCONSISTENT);
+
+		assert.ok(generatorIssue, 'Should report DSV205');
+		assert.strictEqual(inconsistent, undefined, 'Should not report DSV204 for generators');
+	});
+
+	test('DSV204: Should handle None in multiple returns', () => {
+		const func = createTestFunction({
+			returnType: 'str | None',
+			returnStatements: [
+				{ type: 'str', line: 5 },
+				{ type: 'None', line: 8 },
+				{ type: 'int', line: 12 }
+			]
+		});
+		const docstring = createTestDocstring({
+			returnType: 'str | None',
+			returnDescription: 'Result'
+		});
+
+		const diagnostics = analyzer.analyze(func, docstring);
+		const inconsistent = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MULTIPLE_INCONSISTENT);
+
+		assert.ok(inconsistent, 'Should detect None mixed with str and int');
+		assert.ok(inconsistent!.message.includes('str'));
+		assert.ok(inconsistent!.message.includes('none'));
+		assert.ok(inconsistent!.message.includes('int'));
+	});
+
+	test('DSV204: Should handle null types (inference failed) gracefully', () => {
+		const func = createTestFunction({
+			returnType: 'str',
+			returnStatements: [
+				{ type: 'str', line: 5 },
+				{ type: null, line: 8 },  // Type inference failed
+				{ type: 'str', line: 12 }
+			]
+		});
+		const docstring = createTestDocstring({
+			returnType: 'str',
+			returnDescription: 'Result'
+		});
+
+		const diagnostics = analyzer.analyze(func, docstring);
+		const inconsistent = diagnostics.find(d => d.code === DiagnosticCode.RETURN_MULTIPLE_INCONSISTENT);
+
+		// Should not crash and should not report (only known types are str)
+		assert.strictEqual(inconsistent, undefined, 'Should skip null types gracefully');
+	});
+
+	test('DSV205: Should handle async generators', () => {
+		const func = createTestFunction({
+			isGenerator: true,
+			isAsync: true,
+			returnType: 'AsyncGenerator[int, None, None]',
+			yieldStatements: [
+				{ type: 'int', line: 5 }
+			]
+		});
+		const docstring = createTestDocstring({
+			returnType: 'AsyncGenerator[int, None, None]',
+			returnDescription: 'Async values'
+		});
+
+		const diagnostics = analyzer.analyze(func, docstring);
+		const generatorIssue = diagnostics.find(d => d.code === DiagnosticCode.GENERATOR_SHOULD_YIELD);
+
+		assert.ok(generatorIssue, 'Should detect async generator with Returns');
+	});
+});
+
 

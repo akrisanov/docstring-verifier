@@ -126,6 +126,12 @@ export class PythonParser implements IParser {
 				type: ret.type,
 				line: ret.line,
 			})),
+			yieldStatements: pythonFunc.yieldStatements.map(y => ({
+				type: y.type,
+				line: y.line,
+			})),
+			isGenerator: pythonFunc.isGenerator,
+			isAsync: pythonFunc.isAsync,
 			raises: pythonFunc.raises.map(exc => ({
 				type: exc.type,
 				line: exc.line,
@@ -200,6 +206,12 @@ interface PythonFunctionDescriptor {
 		type: string | null;
 		line: number;
 	}>;
+	yieldStatements: Array<{
+		type: string | null;
+		line: number;
+	}>;
+	isGenerator: boolean;
+	isAsync: boolean;
 	raises: Array<{
 		type: string;
 		line: number;

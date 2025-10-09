@@ -18,7 +18,7 @@ The implementation plan can be found in [MVP.md](./docs/MVP.md).
 
 Sneak peek of the extension prototype (day 2) in action:
 
-![Demo](./docs/day2.png)
+![Demo](./docs/day3.png)
 
 ## Limitations
 
@@ -66,8 +66,10 @@ Simple high-level flow:
 
 **Key Features:**
 
-- **4 Validation Rules**: Parameters, Return types, Exceptions, Side effects
+- **5 Return Validation Rules**: Type mismatch, Missing documentation, Void functions, Multiple returns, Generator yields
+- **4 Parameter Validation Rules**: Missing in code/docstring, Type mismatch, Optional mismatch
 - **Multi-language**: Python (Google/Sphinx) + TypeScript (JSDoc)
+- **Generator Support**: Detects yield statements and validates Yields vs Returns sections
 - **Diagnostic Codes**: DSV101-401 for filtering
 - **Quick Fixes**: Auto-generate corrected docstrings
 

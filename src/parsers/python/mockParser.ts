@@ -52,6 +52,9 @@ export class MockPythonParser implements IParser {
                     line: 5,
                 },
             ],
+            yieldStatements: [],
+            isGenerator: false,
+            isAsync: false,
             raises: [],
             // Docstring only mentions 'y', missing 'x'
             docstring: '"""Calculate result.\n\n    Args:\n        y (int): Second number\n\n    Returns:\n        int: The result\n    """',

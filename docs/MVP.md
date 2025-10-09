@@ -80,7 +80,8 @@
   - [x] DSV201: Return type mismatch
   - [x] DSV202: Missing return in docstring
   - [x] DSV203: Docstring says returns, but function is void
-  - [ ] Handle multiple returns, yield, None
+  - [x] DSV204: Multiple inconsistent return types
+  - [x] DSV205: Generator should use Yields, not Returns
 - [ ] Exception Analyzer
   - DSV301: Exception raised but not documented
   - DSV302: Exception documented but not raised

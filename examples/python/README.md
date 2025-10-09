@@ -16,6 +16,9 @@ docstring mismatches detected by the extension.
 
 - **dsv201_return_mismatch.py** - DSV201: Return type mismatch between code and docstring
 - **dsv202_missing_return.py** - DSV202: Function has return type but no Returns section in docstring
+- **dsv203_void_but_documented.py** - DSV203: Function is void (no return) but docstring documents a return
+- **dsv204_multiple_returns.py** - DSV204: Function has multiple inconsistent return types
+- **dsv205_generator_returns.py** - DSV205: Generator function uses Returns instead of Yields
 
 ### Exception Analyzer (DSV3xx)
 

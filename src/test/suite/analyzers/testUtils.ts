@@ -26,6 +26,9 @@ export interface CreateFunctionOptions {
 	parameters?: ParameterDescriptor[];
 	returnType?: string | null;
 	returnStatements?: Array<{ type: string | null; line: number }>;
+	yieldStatements?: Array<{ type: string | null; line: number }>;
+	isGenerator?: boolean;
+	isAsync?: boolean;
 	raises?: Array<{ type: string; line: number }>;
 	docstring?: string | null;
 	docstringRange?: vscode.Range | null;
@@ -43,6 +46,9 @@ export function createTestFunction(options: CreateFunctionOptions = {}): Functio
 		parameters: options.parameters ?? [],
 		returnType: options.returnType ?? null,
 		returnStatements: options.returnStatements ?? [],
+		yieldStatements: options.yieldStatements ?? [],
+		isGenerator: options.isGenerator ?? false,
+		isAsync: options.isAsync ?? false,
 		raises: options.raises ?? [],
 		docstring: options.docstring ?? 'Test',
 		docstringRange: options.docstringRange ?? TEST_RANGE,
