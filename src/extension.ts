@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { Logger } from './utils/logger';
 import { isEnabled } from './utils/config';
 import { LanguageHandlerRegistry, createPythonHandler } from './languages';
+import { registerCodeActionProvider, ParameterFixProvider } from './codeActions';
 
 // Global instances
 let logger: Logger;
@@ -34,6 +35,13 @@ export function activate(context: vscode.ExtensionContext) {
 	// TODO (Future): Register TypeScript/JavaScript handlers
 	// languageRegistry.register('typescript', createTypeScriptHandler(context));
 	// languageRegistry.register('javascript', createJavaScriptHandler(context));
+
+	// Register Code Action Provider for Quick Fixes
+	const codeActionProvider = registerCodeActionProvider(context);
+
+	// Register fix providers
+	codeActionProvider.registerFixProvider(new ParameterFixProvider());
+	logger.info('Registered Code Action Provider with fix providers');
 
 	// Register document save listener
 	// Note: We analyze on save rather than on every change to avoid performance issues
