@@ -1,16 +1,21 @@
 import * as vscode from 'vscode';
 import { Logger } from './utils/logger';
-import { isEnabled } from './utils/config';
+import { isEnabled, isLLMEnabled, getLLMTimeout, getLLMProvider } from './utils/config';
 import { LanguageHandlerRegistry, createPythonHandler } from './languages';
 import { registerCodeActionProvider, ParameterFixProvider } from './codeActions';
+import { registerEnhanceDescriptionCommand, registerApplyQuickFixCommand } from './codeActions/commands';
 import { FunctionDescriptor } from './parsers/types';
 import { EditorHandlerRegistry, createPythonEditorHandler } from './editors';
+import { ILLMService, GitHubCopilotLLMService } from './llm';
+import { ConfigurationHandler, DocumentEventHandler } from './extension/index';
 
 // Global instances
 let logger: Logger;
 let diagnosticCollection: vscode.DiagnosticCollection;
 let languageRegistry: LanguageHandlerRegistry;
 let editorRegistry: EditorHandlerRegistry;
+let llmService: ILLMService | undefined;
+let documentEventHandler: DocumentEventHandler;
 
 // Cache of parsed functions per document
 // Key: document URI, Value: array of FunctionDescriptor
@@ -51,100 +56,91 @@ export function activate(context: vscode.ExtensionContext) {
 	// languageRegistry.register('javascript', createJavaScriptHandler(context));
 	// editorRegistry.register('typescript', createTypeScriptEditorHandler());
 
+	// Initialize LLM service if enabled
+	if (isLLMEnabled()) {
+		const llmProvider = getLLMProvider();
+		const llmTimeout = getLLMTimeout();
+
+		if (llmProvider === 'github-copilot') {
+			llmService = new GitHubCopilotLLMService(llmTimeout);
+			logger.info(`Initialized GitHub Copilot LLM service (timeout: ${llmTimeout}ms)`);
+		} else {
+			logger.warn(`Unknown LLM provider: ${llmProvider}`);
+		}
+	} else {
+		logger.info('LLM service disabled in settings');
+	}
+
 	// Register Code Action Provider for Quick Fixes
 	const codeActionProvider = registerCodeActionProvider(context, parsedFunctionsCache);
 
 	// Register fix providers
-	codeActionProvider.registerFixProvider(new ParameterFixProvider(editorRegistry));
+	codeActionProvider.registerFixProvider(new ParameterFixProvider(editorRegistry, llmService));
 	logger.info('Registered Code Action Provider with fix providers');
 
-	// Register document save listener
-	// Note: We analyze on save rather than on every change to avoid performance issues
-	// and because diagnostics are less useful while user is still typing
+	// Register Quick Fix application command
+	// This command applies the edit and saves the document to trigger re-analysis
+	registerApplyQuickFixCommand(context);
+	logger.info('Registered apply Quick Fix command');
+
+	// Register LLM enhancement command if LLM service is available
+	if (llmService) {
+		registerEnhanceDescriptionCommand(context, llmService, editorRegistry);
+		logger.info('Registered LLM enhancement command');
+	}
+
+	// Create event handlers
+	documentEventHandler = new DocumentEventHandler({
+		logger,
+		parsedFunctionsCache,
+		analyzeDocument,
+		shouldAnalyze,
+	});
+
+	const configurationHandler = new ConfigurationHandler({
+		logger,
+		diagnosticCollection,
+		languageRegistry,
+		getLLMService: () => llmService,
+		setLLMService: (service) => { llmService = service; },
+		analyzeDocument,
+		shouldAnalyze,
+	});
+
+	// Register document event listeners
+	// Note: We analyze on save for immediate feedback, and on change (with debouncing)
+	// to update diagnostics after Quick Fixes are applied
+	context.subscriptions.push(
+		vscode.workspace.onDidChangeTextDocument((event) => {
+			documentEventHandler.handleDocumentChange(event);
+		})
+	);
+
 	context.subscriptions.push(
 		vscode.workspace.onDidSaveTextDocument((document) => {
-			if (shouldAnalyze(document)) {
-				logger.debug(`Document saved: ${document.fileName}`);
-				analyzeDocument(document);
-			}
+			documentEventHandler.handleDocumentSave(document);
 		})
 	);
 
-	// Register document open listener
 	context.subscriptions.push(
 		vscode.workspace.onDidOpenTextDocument((document) => {
-			if (shouldAnalyze(document)) {
-				logger.debug(`Document opened: ${document.fileName}`);
-				analyzeDocument(document);
-			}
+			documentEventHandler.handleDocumentOpen(document);
 		})
 	);
 
-	// Register document close listener - clear cache for closed documents
 	context.subscriptions.push(
 		vscode.workspace.onDidCloseTextDocument((document) => {
-			const docUri = document.uri.toString();
-			if (parsedFunctionsCache.has(docUri)) {
-				parsedFunctionsCache.delete(docUri);
-				logger.trace(`Cleared parsed functions cache for: ${document.fileName}`);
-			}
+			documentEventHandler.handleDocumentClose(document);
 		})
 	);
 
 	// Analyze all currently open documents
-	vscode.workspace.textDocuments.forEach((document) => {
-		if (shouldAnalyze(document)) {
-			analyzeDocument(document);
-		}
-	});
+	documentEventHandler.analyzeOpenDocuments();
 
 	// Watch for configuration changes
 	context.subscriptions.push(
 		vscode.workspace.onDidChangeConfiguration((event) => {
-			if (event.affectsConfiguration('docstringVerifier.enable')) {
-				logger.info('Extension enable/disable setting changed');
-				// Re-analyze all open documents or clear diagnostics
-				if (isEnabled()) {
-					logger.info('Extension enabled - analyzing open documents');
-					vscode.workspace.textDocuments.forEach((document) => {
-						if (shouldAnalyze(document)) {
-							analyzeDocument(document);
-						}
-					});
-				} else {
-					logger.info('Extension disabled - clearing diagnostics');
-					diagnosticCollection.clear();
-				}
-			}
-
-			if (event.affectsConfiguration('docstringVerifier.docstringStyle')) {
-				logger.info('Docstring style setting changed - clearing Python cache');
-				// Only Python has docstring style configuration
-				languageRegistry.resetCache('python');
-				// Re-analyze all open Python documents with new style
-				vscode.workspace.textDocuments.forEach((document) => {
-					if (shouldAnalyze(document) && document.languageId === 'python') {
-						analyzeDocument(document);
-					}
-				});
-			}
-
-			// Reset Python executor cache when Python settings change
-			// Note: pythonScriptPath changes are not handled here as that's a development
-			// setting and requires extension reload anyway
-			if (event.affectsConfiguration('docstringVerifier.pythonPath') ||
-				event.affectsConfiguration('docstringVerifier.preferUv')) {
-				logger.info('Python settings changed - resetting Python cache');
-				languageRegistry.resetCache('python');
-				// Re-analyze all open Python documents
-				vscode.workspace.textDocuments.forEach((document) => {
-					if (shouldAnalyze(document) && document.languageId === 'python') {
-						analyzeDocument(document);
-					}
-				});
-			}
-
-			// Note: logLevel changes are handled by Logger class internally
+			configurationHandler.handleConfigurationChange(event);
 		})
 	);
 
@@ -259,9 +255,18 @@ async function analyzeDocument(document: vscode.TextDocument): Promise<void> {
 export function deactivate() {
 	logger?.info('Docstring Verifier extension deactivating...');
 
+	// Clean up document event handler
+	documentEventHandler?.dispose();
+
+	// Clear caches
+	parsedFunctionsCache.clear();
+	analyzingDocuments.clear();
+
 	// Dispose of diagnostic collection
 	diagnosticCollection?.dispose();
 
 	// Dispose of logger
 	logger?.dispose();
+
+	logger?.info('Docstring Verifier extension deactivated');
 }

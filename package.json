@@ -71,6 +71,26 @@
 					],
 					"default": "auto",
 					"description": "Docstring style to use for validation and generation (auto = detect automatically)"
+				},
+				"docstringVerifier.useLLM": {
+					"type": "boolean",
+					"default": true,
+					"description": "Use LLM (GitHub Copilot) to generate descriptions for Quick Fixes. If disabled, 'TODO' placeholders will be used instead."
+				},
+				"docstringVerifier.llmTimeout": {
+					"type": "number",
+					"default": 5000,
+					"minimum": 1000,
+					"maximum": 30000,
+					"description": "Timeout in milliseconds for LLM requests (1000-30000). If the LLM doesn't respond in time, a 'TODO' placeholder will be used."
+				},
+				"docstringVerifier.llmProvider": {
+					"type": "string",
+					"enum": [
+						"github-copilot"
+					],
+					"default": "github-copilot",
+					"description": "LLM provider to use for generating descriptions. Currently only GitHub Copilot is supported."
 				}
 			}
 		}

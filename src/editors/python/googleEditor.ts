@@ -61,7 +61,7 @@ export class GoogleDocstringEditor implements IDocstringEditor {
 	/**
 	 * Add parameter to Args section.
 	 */
-	addParameter(param: ParameterDescriptor): void {
+	addParameter(param: ParameterDescriptor, description?: string, allParameters?: ParameterDescriptor[]): void {
 		this.logger.trace(`Adding parameter: ${param.name}`);
 
 		// Check if parameter already exists
@@ -77,10 +77,10 @@ export class GoogleDocstringEditor implements IDocstringEditor {
 		}
 
 		// Format parameter line
-		const paramLine = this.formatParameterLine(param);
+		const paramLine = this.formatParameterLine(param, description);
 
-		// Find insertion point (after last parameter or after "Args:" line)
-		const insertIndex = this.findParameterInsertionPoint(argsSection);
+		// Find insertion point based on function signature order
+		const insertIndex = this.findParameterInsertionPoint(argsSection, param, allParameters);
 
 		// Insert the line
 		this.lines.splice(insertIndex, 0, paramLine);
@@ -346,7 +346,8 @@ export class GoogleDocstringEditor implements IDocstringEditor {
 	 * Parse docstring structure to identify sections.
 	 */
 	private parseStructure(): void {
-		const sectionPattern = /^(Args?|Arguments?|Parameters?|Returns?|Return|Yields?|Yield|Raises?|Raise|Throws?|Note|Notes?):\s*$/i;
+		// Pattern matches section headers with optional leading whitespace
+		const sectionPattern = /^\s*(Args?|Arguments?|Parameters?|Returns?|Return|Yields?|Yield|Raises?|Raise|Throws?|Note|Notes?):\s*$/i;
 
 		let currentSection: SectionInfo | null = null;
 
@@ -415,10 +416,11 @@ export class GoogleDocstringEditor implements IDocstringEditor {
 	/**
 	 * Format parameter line in Google style.
 	 */
-	private formatParameterLine(param: ParameterDescriptor): string {
+	private formatParameterLine(param: ParameterDescriptor, description?: string): string {
 		const indent = ' '.repeat(this.options.indent * 2); // Args items are double-indented
 		const typeStr = param.type || 'Any';
-		return `${indent}${param.name} (${typeStr}): TODO: Add description`;
+		const desc = description || 'TODO: Add description';
+		return `${indent}${param.name} (${typeStr}): ${desc}`;
 	}
 
 	/**
@@ -469,13 +471,71 @@ export class GoogleDocstringEditor implements IDocstringEditor {
 
 	/**
 	 * Find insertion point for a new parameter.
+	 *
+	 * Determines the correct position to insert a parameter based on:
+	 * 1. The order of parameters in the function signature (if allParameters is provided)
+	 * 2. The existing parameters in the docstring
+	 *
+	 * If allParameters is not provided, inserts at the end of the Args section.
 	 */
-	private findParameterInsertionPoint(argsSection: SectionInfo): number {
-		// Insert after the last parameter line (inside the section)
-		// or right after "Args:" header if section is empty
-		// Note: endLine points to the last line of content, not the header
-		// So we insert at endLine + 1, which is still inside or right after the section
-		return argsSection.endLine + 1;
+	private findParameterInsertionPoint(
+		argsSection: SectionInfo,
+		param: ParameterDescriptor,
+		allParameters?: ParameterDescriptor[]
+	): number {
+		// If we don't have the full parameter list, insert at the end (old behavior)
+		if (!allParameters || allParameters.length === 0) {
+			return argsSection.endLine + 1;
+		}
+
+		// Find the index of the parameter we're adding in the function signature
+		const paramIndexInSignature = allParameters.findIndex(p => p.name === param.name);
+		if (paramIndexInSignature === -1) {
+			this.logger.warn(`Parameter ${param.name} not found in function signature`);
+			return argsSection.endLine + 1;
+		}
+
+		// If this is the first parameter in the signature, insert right after "Args:" header
+		if (paramIndexInSignature === 0) {
+			return argsSection.startLine + 1;
+		}
+
+		// Find existing parameters in docstring and their positions
+		const existingParams: { name: string; line: number; indexInSignature: number }[] = [];
+
+		for (let i = argsSection.startLine + 1; i <= argsSection.endLine; i++) {
+			const line = this.lines[i];
+			// Match parameter name at the beginning of the line (after indentation)
+			const match = line.match(/^\s*(\w+)\s*\(/);
+			if (match) {
+				const paramName = match[1];
+				const indexInSig = allParameters.findIndex(p => p.name === paramName);
+				if (indexInSig !== -1) {
+					existingParams.push({
+						name: paramName,
+						line: i,
+						indexInSignature: indexInSig
+					});
+				}
+			}
+		}
+
+		// If no existing parameters found, insert right after "Args:" header
+		if (existingParams.length === 0) {
+			return argsSection.startLine + 1;
+		}
+
+		// Find the correct insertion point based on signature order
+		// Insert before the first parameter that comes after us in the signature
+		for (const existingParam of existingParams) {
+			if (existingParam.indexInSignature > paramIndexInSignature) {
+				return existingParam.line;
+			}
+		}
+
+		// If all existing parameters come before us in the signature, insert after the last one
+		const lastParam = existingParams[existingParams.length - 1];
+		return lastParam.line + 1;
 	}
 
 	/**

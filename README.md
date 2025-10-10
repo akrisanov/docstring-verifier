@@ -84,26 +84,91 @@ For detailed architecture, see [Design.md](./docs/Design.md).
 
 ## Configuration
 
-The extension can be configured via VS Code settings -> Preferences: Open Settings (JSON):
+The extension works out of the box with sensible defaults. All settings can be configured via:
+
+- VS Code UI: **Preferences → Settings** → Search for "Docstring Verifier"
+- VS Code JSON: **Preferences → Settings (JSON)** → Add `docstringVerifier.*` keys
+
+### Quick Start
+
+No configuration needed! The extension will:
+
+- Auto-detect your Python interpreter
+- Auto-detect docstring style (Google/Sphinx)
+- Use AI (GitHub Copilot) for smart descriptions
+
+### Common Settings
 
 ```jsonc
 {
-  // Enable/disable the extension
+  // Enable/disable the extension (default: true)
   "docstringVerifier.enable": true,
 
-  // Logging level (error, warn, info, debug, trace)
-  "docstringVerifier.logLevel": "info",
+  // Use AI for generating descriptions in Quick Fixes (default: true)
+  // Requires GitHub Copilot extension
+  "docstringVerifier.useLLM": true,
 
-  // Custom Python interpreter path (leave empty for auto-detection)
-  "docstringVerifier.pythonPath": "",
+  // Docstring style: "auto" (detect), "google", or "sphinx" (default: "auto")
+  "docstringVerifier.docstringStyle": "auto",
 
-  // Prefer uv for running Python scripts (faster, more reliable)
-  "docstringVerifier.preferUv": true,
-
-  // Docstring style (auto = detect automatically, google, sphinx)
-  "docstringVerifier.docstringStyle": "auto"
+  // Logging level: "error", "warn", "info", "debug", "trace" (default: "info")
+  "docstringVerifier.logLevel": "info"
 }
 ```
+
+### Advanced Settings
+
+```jsonc
+{
+  // Custom Python interpreter (default: "" = auto-detect)
+  "docstringVerifier.pythonPath": "/usr/local/bin/python3",
+
+  // Prefer uv for faster Python execution (default: true)
+  "docstringVerifier.preferUv": true,
+
+  // LLM timeout in milliseconds, 1000-30000 (default: 5000)
+  "docstringVerifier.llmTimeout": 5000,
+
+  // LLM provider (default: "github-copilot")
+  // Currently only GitHub Copilot is supported
+  "docstringVerifier.llmProvider": "github-copilot"
+}
+```
+
+### AI-Powered Descriptions
+
+When **Quick Fixes** add missing parameters, returns, or exceptions, the extension can use AI to generate smart descriptions instead of "TODO" placeholders.
+
+**Requirements:**
+
+- Install [GitHub Copilot](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot) extension
+- Set `"docstringVerifier.useLLM": true` (enabled by default)
+
+**How it works:**
+
+1. Click Quick Fix → parameter is added instantly with "TODO: Add description"
+2. AI generates description in the background (typically 1-3 seconds)
+3. "TODO" is automatically replaced with the AI-generated text
+4. Future requests for the same parameter reuse cached descriptions
+
+### Troubleshooting
+
+**Extension not working?**
+
+- Check Python is installed: `python --version` or `python3 --version`
+- Try setting `pythonPath` explicitly in settings
+- Set `"docstringVerifier.logLevel": "debug"` to see detailed logs in Output panel
+
+**AI descriptions not working?**
+
+- Verify GitHub Copilot is installed and activated
+- Check `"docstringVerifier.useLLM": true` in settings
+- Try increasing timeout: `"docstringVerifier.llmTimeout": 10000`
+
+**Slow performance?**
+
+- Enable `"docstringVerifier.preferUv": true` (requires [uv](https://github.com/astral-sh/uv))
+- Reduce logging: `"docstringVerifier.logLevel": "warn"`
 
 ## Technical Stack
 

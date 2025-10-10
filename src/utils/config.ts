@@ -12,6 +12,9 @@ export interface ExtensionConfig {
 	pythonScriptPath: string;
 	preferUv: boolean;
 	docstringStyle: 'auto' | 'google' | 'sphinx';
+	useLLM: boolean;
+	llmTimeout: number;
+	llmProvider: 'github-copilot';
 }
 
 /**
@@ -31,6 +34,9 @@ export function getConfig(): ExtensionConfig {
 		pythonScriptPath: config.get<string>('pythonScriptPath', ''),
 		preferUv: config.get<boolean>('preferUv', true),
 		docstringStyle: config.get<'auto' | 'google' | 'sphinx'>('docstringStyle', 'auto'),
+		useLLM: config.get<boolean>('useLLM', true),
+		llmTimeout: config.get<number>('llmTimeout', 5000),
+		llmProvider: config.get<'github-copilot'>('llmProvider', 'github-copilot'),
 	};
 }
 
@@ -46,4 +52,25 @@ export function isEnabled(): boolean {
  */
 export function getDocstringStyle(): 'auto' | 'google' | 'sphinx' {
 	return getConfig().docstringStyle;
+}
+
+/**
+ * Check if LLM is enabled
+ */
+export function isLLMEnabled(): boolean {
+	return getConfig().useLLM;
+}
+
+/**
+ * Get LLM timeout in milliseconds
+ */
+export function getLLMTimeout(): number {
+	return getConfig().llmTimeout;
+}
+
+/**
+ * Get LLM provider
+ */
+export function getLLMProvider(): 'github-copilot' {
+	return getConfig().llmProvider;
 }

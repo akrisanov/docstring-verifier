@@ -59,12 +59,14 @@ export interface IDocstringEditor {
 	 * Add a parameter to the Args/Parameters section.
 	 *
 	 * If the Args section doesn't exist, it will be created.
-	 * The parameter is inserted in the correct position (usually at the end).
-	 * A placeholder description "TODO: Add description" is used.
+	 * The parameter is inserted in the correct position based on the function signature order.
+	 * A placeholder description "TODO: Add description" is used if description is not provided.
 	 *
 	 * @param param The parameter to add
+	 * @param description Optional description (default: "TODO: Add description")
+	 * @param allParameters Optional array of all function parameters to determine correct insertion order
 	 */
-	addParameter(param: ParameterDescriptor): void;
+	addParameter(param: ParameterDescriptor, description?: string, allParameters?: ParameterDescriptor[]): void;
 
 	/**
 	 * Remove a parameter from the Args/Parameters section.

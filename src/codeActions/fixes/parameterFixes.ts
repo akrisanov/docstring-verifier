@@ -7,6 +7,7 @@ import { Logger } from '../../utils/logger';
 import { DiagnosticCode } from '../../diagnostics/types';
 import { ICodeActionProvider, CodeActionContext } from '../types';
 import { EditorHandlerRegistry } from '../../editors/registry';
+import { ILLMService } from '../../llm';
 import {
 	findDocstringRange,
 	extractParameterName,
@@ -26,10 +27,12 @@ import {
 export class ParameterFixProvider implements ICodeActionProvider {
 	private logger: Logger;
 	private editorRegistry: EditorHandlerRegistry;
+	private llmService: ILLMService | undefined;
 
-	constructor(editorRegistry: EditorHandlerRegistry) {
+	constructor(editorRegistry: EditorHandlerRegistry, llmService?: ILLMService) {
 		this.logger = new Logger('Docstring Verifier - Parameter Fix Provider');
 		this.editorRegistry = editorRegistry;
+		this.llmService = llmService;
 	}
 
 	/**
@@ -118,17 +121,24 @@ export class ParameterFixProvider implements ICodeActionProvider {
 			return action;
 		}
 
+		// Phase 1: Create immediate Quick Fix with TODO placeholder
 		// Use editor to add parameter
 		editor.load(docstringText);
-		editor.addParameter(param);
+		editor.addParameter(param, undefined, context.function.parameters); // Pass all parameters for correct positioning
 		const updatedDocstring = editor.getText();
 
 		// Create workspace edit
 		const edit = new vscode.WorkspaceEdit();
 		edit.replace(context.document.uri, docstringRange, updatedDocstring);
-		action.edit = edit;
 
-		this.logger.trace(`Created "Add parameter '${paramName}'" action`);
+		// Use command to apply edit and trigger save (which triggers re-analysis)
+		action.command = {
+			command: 'docstring-verifier.applyQuickFix',
+			title: 'Apply Quick Fix',
+			arguments: [context.document.uri, edit]
+		};
+
+		this.logger.info(`Created "Add parameter '${paramName}'" action`);
 
 		return action;
 	}
@@ -179,7 +189,13 @@ export class ParameterFixProvider implements ICodeActionProvider {
 		// Create workspace edit
 		const edit = new vscode.WorkspaceEdit();
 		edit.replace(context.document.uri, docstringRange, updatedDocstring);
-		action.edit = edit;
+
+		// Use command instead of direct edit to ensure re-analysis
+		action.command = {
+			command: 'docstring-verifier.applyQuickFix',
+			title: 'Apply Quick Fix',
+			arguments: [context.document.uri, edit]
+		};
 
 		this.logger.trace(`Created "Remove parameter '${paramName}'" action`);
 
@@ -235,9 +251,15 @@ export class ParameterFixProvider implements ICodeActionProvider {
 		// Create workspace edit
 		const edit = new vscode.WorkspaceEdit();
 		edit.replace(context.document.uri, docstringRange, updatedDocstring);
-		action.edit = edit;
 
-		this.logger.trace(`Created "Fix type for '${paramName}' to '${expectedType}'" action`);
+		// Use command instead of direct edit to ensure re-analysis
+		action.command = {
+			command: 'docstring-verifier.applyQuickFix',
+			title: 'Apply Quick Fix',
+			arguments: [context.document.uri, edit]
+		};
+
+		this.logger.trace(`Created "Fix type for '${paramName}'" action`);
 
 		return action;
 	}
@@ -291,7 +313,13 @@ export class ParameterFixProvider implements ICodeActionProvider {
 		// Create workspace edit
 		const edit = new vscode.WorkspaceEdit();
 		edit.replace(context.document.uri, docstringRange, updatedDocstring);
-		action.edit = edit;
+
+		// Use command instead of direct edit to ensure re-analysis
+		action.command = {
+			command: 'docstring-verifier.applyQuickFix',
+			title: 'Apply Quick Fix',
+			arguments: [context.document.uri, edit]
+		};
 
 		const status = expectedOptional ? 'optional' : 'required';
 		this.logger.trace(`Created "Fix optional status for '${paramName}' to '${status}'" action`);
