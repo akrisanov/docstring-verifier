@@ -3,11 +3,18 @@ import { Logger } from './utils/logger';
 import { isEnabled } from './utils/config';
 import { LanguageHandlerRegistry, createPythonHandler } from './languages';
 import { registerCodeActionProvider, ParameterFixProvider } from './codeActions';
+import { FunctionDescriptor } from './parsers/types';
+import { EditorHandlerRegistry, createPythonEditorHandler } from './editors';
 
 // Global instances
 let logger: Logger;
 let diagnosticCollection: vscode.DiagnosticCollection;
 let languageRegistry: LanguageHandlerRegistry;
+let editorRegistry: EditorHandlerRegistry;
+
+// Cache of parsed functions per document
+// Key: document URI, Value: array of FunctionDescriptor
+const parsedFunctionsCache = new Map<string, FunctionDescriptor[]>();
 
 // Track documents currently being analyzed to prevent concurrent analysis
 const analyzingDocuments = new Set<string>();
@@ -32,15 +39,23 @@ export function activate(context: vscode.ExtensionContext) {
 	languageRegistry.register('python', createPythonHandler(context));
 	logger.info('Registered language handlers: Python');
 
+	// Initialize editor handler registry
+	editorRegistry = new EditorHandlerRegistry();
+
+	// Register editor handlers
+	editorRegistry.register('python', createPythonEditorHandler());
+	logger.info('Registered editor handlers: Python');
+
 	// TODO (Future): Register TypeScript/JavaScript handlers
 	// languageRegistry.register('typescript', createTypeScriptHandler(context));
 	// languageRegistry.register('javascript', createJavaScriptHandler(context));
+	// editorRegistry.register('typescript', createTypeScriptEditorHandler());
 
 	// Register Code Action Provider for Quick Fixes
-	const codeActionProvider = registerCodeActionProvider(context);
+	const codeActionProvider = registerCodeActionProvider(context, parsedFunctionsCache);
 
 	// Register fix providers
-	codeActionProvider.registerFixProvider(new ParameterFixProvider());
+	codeActionProvider.registerFixProvider(new ParameterFixProvider(editorRegistry));
 	logger.info('Registered Code Action Provider with fix providers');
 
 	// Register document save listener
@@ -65,8 +80,16 @@ export function activate(context: vscode.ExtensionContext) {
 		})
 	);
 
-	// Note: Document close listener removed - cache clearing is now handled
-	// internally by language handlers via resetCache() method
+	// Register document close listener - clear cache for closed documents
+	context.subscriptions.push(
+		vscode.workspace.onDidCloseTextDocument((document) => {
+			const docUri = document.uri.toString();
+			if (parsedFunctionsCache.has(docUri)) {
+				parsedFunctionsCache.delete(docUri);
+				logger.trace(`Cleared parsed functions cache for: ${document.fileName}`);
+			}
+		})
+	);
 
 	// Analyze all currently open documents
 	vscode.workspace.textDocuments.forEach((document) => {
@@ -170,6 +193,9 @@ async function analyzeDocument(document: vscode.TextDocument): Promise<void> {
 		// Step 1: Parse the document to extract functions
 		const functions = await handler.parser.parse(document);
 		logger.debug(`Found ${functions.length} functions in ${document.fileName}`);
+
+		// Cache parsed functions for use in Code Actions
+		parsedFunctionsCache.set(document.uri.toString(), functions);
 
 		if (functions.length === 0) {
 			return;

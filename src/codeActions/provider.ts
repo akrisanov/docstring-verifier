@@ -19,9 +19,11 @@ export class DocstringCodeActionProvider implements vscode.CodeActionProvider {
 
 	private logger: Logger;
 	private fixProviders: ICodeActionProvider[] = [];
+	private parsedFunctionsCache: Map<string, FunctionDescriptor[]>;
 
-	constructor() {
+	constructor(parsedFunctionsCache: Map<string, FunctionDescriptor[]>) {
 		this.logger = new Logger('Docstring Verifier - Code Actions');
+		this.parsedFunctionsCache = parsedFunctionsCache;
 	}
 
 	/**
@@ -85,24 +87,34 @@ export class DocstringCodeActionProvider implements vscode.CodeActionProvider {
 	/**
 	 * Find the function descriptor for a given diagnostic.
 	 *
-	 * TODO: This is a temporary implementation that needs to be improved.
-	 * Currently it returns null because we need access to the parsed functions.
-	 *
-	 * Options:
-	 * 1. Cache parsed functions in extension.ts and expose via context
-	 * 2. Re-parse the document (expensive but reliable)
-	 * 3. Store function info in diagnostic.relatedInformation
-	 * 4. Use a global cache/registry
-	 *
-	 * For now, we'll implement option 2 (re-parse) as it's most reliable.
+	 * Uses the cached parsed functions from extension.ts.
+	 * Finds the function that contains the diagnostic range.
 	 */
 	private findFunctionForDiagnostic(
 		document: vscode.TextDocument,
 		diagnostic: vscode.Diagnostic
 	): FunctionDescriptor | null {
-		// TODO: Implement function lookup
-		// For now, return null - this will be implemented when we integrate with parsers
-		this.logger.trace(`Looking up function for diagnostic at line ${diagnostic.range.start.line}`);
+		const docUri = document.uri.toString();
+		const functions = this.parsedFunctionsCache.get(docUri);
+
+		if (!functions || functions.length === 0) {
+			this.logger.warn(`No cached functions found for document: ${document.fileName}`);
+			return null;
+		}
+
+		// Find the function that contains the diagnostic
+		// The diagnostic range is typically on the function definition line or docstring
+		const diagnosticLine = diagnostic.range.start.line;
+
+		for (const func of functions) {
+			// Check if diagnostic is within function range
+			if (diagnosticLine >= func.range.start.line && diagnosticLine <= func.range.end.line) {
+				this.logger.trace(`Found function '${func.name}' for diagnostic at line ${diagnosticLine}`);
+				return func;
+			}
+		}
+
+		this.logger.warn(`No function found containing diagnostic at line ${diagnosticLine}`);
 		return null;
 	}
 }
@@ -110,8 +122,11 @@ export class DocstringCodeActionProvider implements vscode.CodeActionProvider {
 /**
  * Create and register the code action provider.
  */
-export function registerCodeActionProvider(context: vscode.ExtensionContext): DocstringCodeActionProvider {
-	const provider = new DocstringCodeActionProvider();
+export function registerCodeActionProvider(
+	context: vscode.ExtensionContext,
+	parsedFunctionsCache: Map<string, FunctionDescriptor[]>
+): DocstringCodeActionProvider {
+	const provider = new DocstringCodeActionProvider(parsedFunctionsCache);
 
 	// Register with VS Code
 	const registration = vscode.languages.registerCodeActionsProvider(

@@ -18,14 +18,14 @@ The implementation plan can be found in [MVP.md](./docs/MVP.md).
 
 Sneak peek of the extension prototype in action:
 
-![Demo](./docs/day3.png)
+![Demo](./docs/day5.png)
 
 ## Limitations
 
 - Python only supports Google and Sphinx docstring formats (not NumPy-style)
 - Basic type checking (doesn't handle complex generics or custom types)
 - TypeScript/JavaScript support not yet implemented (architecture ready)
-- Quick Fixes integration in progress (editor layer complete, provider integration pending)
+- Quick Fixes: Parameter fixes (DSV101-104) complete; Return and Exception fixes in progress
 - No integration with type checkers (mypy, pyright)
 - Sphinx editor not yet implemented (only Google editor available)
 
@@ -71,6 +71,7 @@ Simple high-level flow:
 - **4 Parameter Validation Rules**: Missing in code/docstring, Type mismatch, Optional mismatch
 - **2 Exception Validation Rules**: Missing documentation, Documented but not raised
 - **1 Side Effects Rule**: Detects undocumented I/O, print statements, global modifications
+- **Quick Fixes**: Automated fixes for parameter mismatches (DSV101-104) with surgical edits
 - **Docstring Styles**: Supports both Google-style and Sphinx-style docstrings
 - **Auto-detection**: Automatically detects Google vs Sphinx docstring style per file
 - **Surgical Docstring Editor**: GoogleDocstringEditor for precise, non-destructive edits

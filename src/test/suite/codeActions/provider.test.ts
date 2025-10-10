@@ -7,17 +7,32 @@ import * as vscode from 'vscode';
 import { DocstringCodeActionProvider } from '../../../codeActions/provider';
 import { ParameterFixProvider } from '../../../codeActions/fixes/parameterFixes';
 import { DiagnosticCode } from '../../../diagnostics/types';
+import { FunctionDescriptor } from '../../../parsers/types';
+import { EditorHandlerRegistry } from '../../../editors/registry';
+import { createPythonEditorHandler } from '../../../editors/python';
 
 suite('Code Action Provider Tests', () => {
 	let provider: DocstringCodeActionProvider;
+	let parsedFunctionsCache: Map<string, FunctionDescriptor[]>;
 
 	setup(() => {
-		provider = new DocstringCodeActionProvider();
-		provider.registerFixProvider(new ParameterFixProvider());
+		parsedFunctionsCache = new Map();
+		provider = new DocstringCodeActionProvider(parsedFunctionsCache);
+
+		// Create editor registry for ParameterFixProvider
+		const editorRegistry = new EditorHandlerRegistry();
+		editorRegistry.register('python', createPythonEditorHandler());
+
+		provider.registerFixProvider(new ParameterFixProvider(editorRegistry));
 	});
 
 	test('Should filter diagnostics by source', () => {
-		const document = {} as vscode.TextDocument;
+		// Create mock document with uri
+		const document = {
+			uri: vscode.Uri.file('/test/file.py'),
+			languageId: 'python',
+			fileName: '/test/file.py',
+		} as vscode.TextDocument;
 		const range = new vscode.Range(0, 0, 0, 0);
 
 		// Create diagnostics from different sources
@@ -50,13 +65,16 @@ suite('Code Action Provider Tests', () => {
 			{} as vscode.CancellationToken
 		);
 
-		// We expect undefined for now since findFunctionForDiagnostic returns null
-		// Once we implement function lookup, this test should be updated
+		// We expect undefined since there are no cached functions for this document
 		assert.ok(actions === undefined || actions.length === 0);
 	});
 
 	test('Should return undefined for non-docstring-verifier diagnostics', () => {
-		const document = {} as vscode.TextDocument;
+		const document = {
+			uri: vscode.Uri.file('/test/file.py'),
+			languageId: 'python',
+			fileName: '/test/file.py',
+		} as vscode.TextDocument;
 		const range = new vscode.Range(0, 0, 0, 0);
 
 		const otherDiagnostic = new vscode.Diagnostic(
@@ -83,8 +101,12 @@ suite('Code Action Provider Tests', () => {
 	});
 
 	test('Should register fix providers', () => {
-		const newProvider = new DocstringCodeActionProvider();
-		const fixProvider = new ParameterFixProvider();
+		const newParsedFunctionsCache = new Map<string, FunctionDescriptor[]>();
+		const newProvider = new DocstringCodeActionProvider(newParsedFunctionsCache);
+
+		const editorRegistry = new EditorHandlerRegistry();
+		editorRegistry.register('python', createPythonEditorHandler());
+		const fixProvider = new ParameterFixProvider(editorRegistry);
 
 		// Should not throw
 		assert.doesNotThrow(() => {
@@ -95,9 +117,12 @@ suite('Code Action Provider Tests', () => {
 
 suite('Parameter Fix Provider Tests', () => {
 	let provider: ParameterFixProvider;
+	let editorRegistry: EditorHandlerRegistry;
 
 	setup(() => {
-		provider = new ParameterFixProvider();
+		editorRegistry = new EditorHandlerRegistry();
+		editorRegistry.register('python', createPythonEditorHandler());
+		provider = new ParameterFixProvider(editorRegistry);
 	});
 
 	test('Should handle DSV102 diagnostic', () => {

@@ -6,6 +6,13 @@ import * as vscode from 'vscode';
 import { Logger } from '../../utils/logger';
 import { DiagnosticCode } from '../../diagnostics/types';
 import { ICodeActionProvider, CodeActionContext } from '../types';
+import { EditorHandlerRegistry } from '../../editors/registry';
+import {
+	findDocstringRange,
+	extractParameterName,
+	extractExpectedType,
+	extractExpectedOptional
+} from '../utils/docstringUtils';
 
 /**
  * Provides fixes for parameter diagnostics.
@@ -18,9 +25,11 @@ import { ICodeActionProvider, CodeActionContext } from '../types';
  */
 export class ParameterFixProvider implements ICodeActionProvider {
 	private logger: Logger;
+	private editorRegistry: EditorHandlerRegistry;
 
-	constructor() {
+	constructor(editorRegistry: EditorHandlerRegistry) {
 		this.logger = new Logger('Docstring Verifier - Parameter Fix Provider');
+		this.editorRegistry = editorRegistry;
 	}
 
 	/**
@@ -68,17 +77,58 @@ export class ParameterFixProvider implements ICodeActionProvider {
 	 * Create action to add missing parameter to docstring (DSV102).
 	 */
 	private createAddParameterAction(context: CodeActionContext): vscode.CodeAction {
+		// Extract parameter name first for the action title
+		const paramName = extractParameterName(context.diagnostic);
+
 		const action = new vscode.CodeAction(
-			'Add missing parameter to docstring',
+			paramName ? `Add parameter '${paramName}' to docstring` : 'Add missing parameter to docstring',
 			vscode.CodeActionKind.QuickFix
 		);
 
 		action.diagnostics = [context.diagnostic];
 		action.isPreferred = true;
 
-		// TODO: Implement the actual fix using WorkspaceEdit
-		// For now, just create the action structure
-		this.logger.trace('Created "Add missing parameter" action');
+		if (!paramName) {
+			this.logger.warn('Could not extract parameter name from diagnostic');
+			return action;
+		}
+
+		// Find the parameter in function descriptor
+		const param = context.function.parameters.find(p => p.name === paramName);
+		if (!param) {
+			this.logger.warn(`Parameter '${paramName}' not found in function descriptor`);
+			return action;
+		}
+
+		// Find docstring range
+		const docstringRange = findDocstringRange(context.document, context.function);
+		if (!docstringRange) {
+			this.logger.warn('Could not find docstring range');
+			return action;
+		}
+
+		// Get docstring text
+		const docstringText = context.document.getText(docstringRange);
+
+		// Get editor for the language
+		const languageId = context.document.languageId;
+		const editor = this.editorRegistry.getEditorAuto(languageId, docstringText);
+		if (!editor) {
+			this.logger.warn(`No editor found for language: ${languageId}`);
+			return action;
+		}
+
+		// Use editor to add parameter
+		editor.load(docstringText);
+		editor.addParameter(param);
+		const updatedDocstring = editor.getText();
+
+		// Create workspace edit
+		const edit = new vscode.WorkspaceEdit();
+		edit.replace(context.document.uri, docstringRange, updatedDocstring);
+		action.edit = edit;
+
+		this.logger.trace(`Created "Add parameter '${paramName}'" action`);
 
 		return action;
 	}
@@ -87,16 +137,51 @@ export class ParameterFixProvider implements ICodeActionProvider {
 	 * Create action to remove extra parameter from docstring (DSV101).
 	 */
 	private createRemoveParameterAction(context: CodeActionContext): vscode.CodeAction {
+		// Extract parameter name first for the action title
+		const paramName = extractParameterName(context.diagnostic);
+
 		const action = new vscode.CodeAction(
-			'Remove parameter from docstring',
+			paramName ? `Remove parameter '${paramName}' from docstring` : 'Remove parameter from docstring',
 			vscode.CodeActionKind.QuickFix
 		);
 
 		action.diagnostics = [context.diagnostic];
 		action.isPreferred = true;
 
-		// TODO: Implement the actual fix
-		this.logger.trace('Created "Remove parameter" action');
+		if (!paramName) {
+			this.logger.warn('Could not extract parameter name from diagnostic');
+			return action;
+		}
+
+		// Find docstring range
+		const docstringRange = findDocstringRange(context.document, context.function);
+		if (!docstringRange) {
+			this.logger.warn('Could not find docstring range');
+			return action;
+		}
+
+		// Get docstring text
+		const docstringText = context.document.getText(docstringRange);
+
+		// Get editor for the language
+		const languageId = context.document.languageId;
+		const editor = this.editorRegistry.getEditorAuto(languageId, docstringText);
+		if (!editor) {
+			this.logger.warn(`No editor found for language: ${languageId}`);
+			return action;
+		}
+
+		// Use editor to remove parameter
+		editor.load(docstringText);
+		editor.removeParameter(paramName);
+		const updatedDocstring = editor.getText();
+
+		// Create workspace edit
+		const edit = new vscode.WorkspaceEdit();
+		edit.replace(context.document.uri, docstringRange, updatedDocstring);
+		action.edit = edit;
+
+		this.logger.trace(`Created "Remove parameter '${paramName}'" action`);
 
 		return action;
 	}
@@ -105,16 +190,54 @@ export class ParameterFixProvider implements ICodeActionProvider {
 	 * Create action to fix parameter type (DSV103).
 	 */
 	private createFixTypeAction(context: CodeActionContext): vscode.CodeAction {
+		// Extract parameter name and type first for the action title
+		const paramName = extractParameterName(context.diagnostic);
+		const expectedType = extractExpectedType(context.diagnostic);
+
 		const action = new vscode.CodeAction(
-			'Fix parameter type in docstring',
+			paramName && expectedType
+				? `Fix type of parameter '${paramName}' to '${expectedType}'`
+				: 'Fix parameter type in docstring',
 			vscode.CodeActionKind.QuickFix
 		);
 
 		action.diagnostics = [context.diagnostic];
 		action.isPreferred = true;
 
-		// TODO: Implement the actual fix
-		this.logger.trace('Created "Fix parameter type" action');
+		if (!paramName || !expectedType) {
+			this.logger.warn('Could not extract parameter name or type from diagnostic');
+			return action;
+		}
+
+		// Find docstring range
+		const docstringRange = findDocstringRange(context.document, context.function);
+		if (!docstringRange) {
+			this.logger.warn('Could not find docstring range');
+			return action;
+		}
+
+		// Get docstring text
+		const docstringText = context.document.getText(docstringRange);
+
+		// Get editor for the language
+		const languageId = context.document.languageId;
+		const editor = this.editorRegistry.getEditorAuto(languageId, docstringText);
+		if (!editor) {
+			this.logger.warn(`No editor found for language: ${languageId}`);
+			return action;
+		}
+
+		// Use editor to update parameter type
+		editor.load(docstringText);
+		editor.updateParameterType(paramName, expectedType);
+		const updatedDocstring = editor.getText();
+
+		// Create workspace edit
+		const edit = new vscode.WorkspaceEdit();
+		edit.replace(context.document.uri, docstringRange, updatedDocstring);
+		action.edit = edit;
+
+		this.logger.trace(`Created "Fix type for '${paramName}' to '${expectedType}'" action`);
 
 		return action;
 	}
@@ -123,16 +246,55 @@ export class ParameterFixProvider implements ICodeActionProvider {
 	 * Create action to fix optional/required mismatch (DSV104).
 	 */
 	private createFixOptionalAction(context: CodeActionContext): vscode.CodeAction {
+		// Extract parameter name and optional status first for the action title
+		const paramName = extractParameterName(context.diagnostic);
+		const expectedOptional = extractExpectedOptional(context.diagnostic);
+
 		const action = new vscode.CodeAction(
-			'Fix parameter optional/required status',
+			paramName && expectedOptional !== null
+				? `Mark parameter '${paramName}' as ${expectedOptional ? 'optional' : 'required'}`
+				: 'Fix parameter optional/required status',
 			vscode.CodeActionKind.QuickFix
 		);
 
 		action.diagnostics = [context.diagnostic];
 		action.isPreferred = true;
 
-		// TODO: Implement the actual fix
-		this.logger.trace('Created "Fix optional status" action');
+		if (!paramName || expectedOptional === null) {
+			this.logger.warn('Could not extract parameter name or optional status from diagnostic');
+			return action;
+		}
+
+		// Find docstring range
+		const docstringRange = findDocstringRange(context.document, context.function);
+		if (!docstringRange) {
+			this.logger.warn('Could not find docstring range');
+			return action;
+		}
+
+		// Get docstring text
+		const docstringText = context.document.getText(docstringRange);
+
+		// Get editor for the language
+		const languageId = context.document.languageId;
+		const editor = this.editorRegistry.getEditorAuto(languageId, docstringText);
+		if (!editor) {
+			this.logger.warn(`No editor found for language: ${languageId}`);
+			return action;
+		}
+
+		// Use editor to update parameter optional status
+		editor.load(docstringText);
+		editor.updateParameterOptional(paramName, expectedOptional);
+		const updatedDocstring = editor.getText();
+
+		// Create workspace edit
+		const edit = new vscode.WorkspaceEdit();
+		edit.replace(context.document.uri, docstringRange, updatedDocstring);
+		action.edit = edit;
+
+		const status = expectedOptional ? 'optional' : 'required';
+		this.logger.trace(`Created "Fix optional status for '${paramName}' to '${status}'" action`);
 
 		return action;
 	}

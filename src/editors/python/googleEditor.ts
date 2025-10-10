@@ -471,7 +471,10 @@ export class GoogleDocstringEditor implements IDocstringEditor {
 	 * Find insertion point for a new parameter.
 	 */
 	private findParameterInsertionPoint(argsSection: SectionInfo): number {
-		// Insert after the last parameter line, or right after "Args:" if no parameters
+		// Insert after the last parameter line (inside the section)
+		// or right after "Args:" header if section is empty
+		// Note: endLine points to the last line of content, not the header
+		// So we insert at endLine + 1, which is still inside or right after the section
 		return argsSection.endLine + 1;
 	}
 
@@ -499,7 +502,10 @@ export class GoogleDocstringEditor implements IDocstringEditor {
 	 * Find insertion point for a new exception.
 	 */
 	private findExceptionInsertionPoint(raisesSection: SectionInfo): number {
-		// Insert after the last exception line, or right after "Raises:" if no exceptions
+		// Insert after the last exception line (inside the section)
+		// or right after "Raises:" header if section is empty
+		// Note: endLine points to the last line of content, not the header
+		// So we insert at endLine + 1, which is still inside or right after the section
 		return raisesSection.endLine + 1;
 	}
 
@@ -603,10 +609,24 @@ export class GoogleDocstringEditor implements IDocstringEditor {
 	 * Remove empty sections (sections with only header, no content).
 	 */
 	private removeEmptySections(): void {
+		// Collect sections to remove first to avoid iterator invalidation
+		// when modifying the Map during iteration
+		const sectionsToRemove: string[] = [];
+
 		for (const [name, section] of this.sections.entries()) {
 			// Check if section has only the header line
 			const hasContent = section.endLine > section.startLine;
 			if (!hasContent) {
+				sectionsToRemove.push(name);
+			}
+		}
+
+		// Remove collected sections
+		// Process in reverse order to avoid coordinate shifts affecting subsequent deletions
+		sectionsToRemove.reverse();
+		for (const name of sectionsToRemove) {
+			const section = this.sections.get(name);
+			if (section) {
 				// Remove section header
 				this.lines.splice(section.startLine, 1);
 				this.updateSectionRanges(section.startLine, -1);
