@@ -25,8 +25,9 @@ Sneak peek of the extension prototype in action:
 - Python only supports Google and Sphinx docstring formats (not NumPy-style)
 - Basic type checking (doesn't handle complex generics or custom types)
 - TypeScript/JavaScript support not yet implemented (architecture ready)
-- Quick Fixes (auto-generate docstrings) not yet implemented
+- Quick Fixes integration in progress (editor layer complete, provider integration pending)
 - No integration with type checkers (mypy, pyright)
+- Sphinx editor not yet implemented (only Google editor available)
 
 ## Architecture
 
@@ -72,6 +73,7 @@ Simple high-level flow:
 - **1 Side Effects Rule**: Detects undocumented I/O, print statements, global modifications
 - **Docstring Styles**: Supports both Google-style and Sphinx-style docstrings
 - **Auto-detection**: Automatically detects Google vs Sphinx docstring style per file
+- **Surgical Docstring Editor**: GoogleDocstringEditor for precise, non-destructive edits
 - **Multi-language Ready**: Python (Google/Sphinx) implemented, TypeScript architecture ready
 - **Generator Support**: Detects yield statements and validates Yields vs Returns sections
 - **Diagnostic Codes**: DSV101-401 for filtering and identification

@@ -10,14 +10,16 @@ that supports Python (implemented) with extensibility for TypeScript/JavaScript 
 
 - ✅ Multi-language architecture with Language Handler Registry
 - ✅ Python support with Google and Sphinx docstring styles
-- ✅ Parameter validation (4 rules)
-- ✅ Return type validation (5 rules)
-- ✅ Exception validation (3 rules)
-- ✅ Side effects detection (1 rule)
+- ✅ Parameter validation (4 rules: DSV101-104)
+- ✅ Return type validation (5 rules: DSV201-205)
+- ✅ Exception validation (2 rules: DSV301-302)
+- ✅ Side effects detection (1 rule: DSV401)
 - ✅ Generator and async function support
 - ✅ Real-time diagnostics in VS Code Problems panel
-- 🚧 Code Actions / Quick Fixes (planned)
-- 🚧 TypeScript/JavaScript support (planned)
+- ✅ Docstring Editor layer (GoogleDocstringEditor with surgical edits)
+- ✅ Editor Handler Registry (factory pattern for editor instances)
+- 🚧 Code Actions / Quick Fixes integration (in progress)
+- 🚧 TypeScript/JavaScript support (architecture ready, implementation pending)
 
 ## High-Level Architecture
 
@@ -336,19 +338,39 @@ Language Handler Registry pattern makes it easy to add new languages.
 
 ---
 
-## Planned: Code Actions Layer
+## Code Actions Layer (In Progress)
+
+### Architecture
 
 ```text
-User clicks Quick Fix
+User clicks Quick Fix (💡)
        ↓
 Code Action Provider
+  - Filter diagnostics by source
+  - Route to appropriate fix provider
        ↓
-Docstring Generator
-  - Read current docstring
-  - Generate corrected version
-  - Preserve descriptions
+Fix Provider (Parameter/Return/Exception)
+  - Get diagnostic context
+  - Find function for diagnostic
        ↓
-Apply WorkspaceEdit
+Editor Handler Registry
+  - Get editor for language + style
+  - Create fresh editor instance (factory pattern)
+       ↓
+Docstring Editor (e.g., GoogleDocstringEditor)
+  - Load existing docstring
+  - Parse into editable structure
+  - Apply surgical edit:
+    * Add/remove parameter line
+    * Update type/optional marker
+    * Add/remove return section
+    * Add/remove exception entry
+  - Preserve all user descriptions
+  - Maintain formatting
+       ↓
+Create WorkspaceEdit
+  - Replace docstring range
+  - Apply to document
        ↓
 Updated docstring in file
 ```
