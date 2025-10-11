@@ -6,28 +6,39 @@
 
 ## Project Goal
 
-Build a VS Code extension that detects discrepancies between docstrings and actual code implementations, highlighting errors and suggesting corrections.
+Build a VS Code extension that detects discrepancies between docstrings and actual code implementations,
+highlighting errors and suggesting corrections.
 
-## Success Criteria for CodeSpeak
+**Current Status:** Core functionality complete with 11 validation rules, automated Quick Fixes for parameters,
+and AI-powered description generation.
 
-- Opens Python file → plugin highlights parameter mismatch
-- Diagnostics + Quick Fix → auto-generates correct docstring
-- Multi-language support (Python + TypeScript) showing architecture extensibility
+## What's Implemented
+
+**Core Features:**
+
+- **11 Validation Rules** covering parameters, returns, exceptions, and side effects (DSV101-401)
+- **Parameter Quick Fixes** with AI-generated descriptions via GitHub Copilot
+- **Real-time Diagnostics** in VS Code Problems panel
+- **Status Bar Integration** showing issue count
+- **Google & Sphinx Docstring Parsing** with auto-detection
+- **High Test Coverage** (86%) with comprehensive test suite
+
+**Configuration:**
+
+- Dynamic configuration without restart
+- Customizable Python path and execution method (uv support)
+- Adjustable LLM timeout and provider selection
+- Configurable logging levels
+
+## Known Limitations
+
+- **Quick Fixes:** Only parameter fixes (DSV101-104) are automated; return/exception fixes require manual editing
+- **Docstring Editors:** Google style editor fully implemented; Sphinx editor not available (parsing only)
+- **Language Support:** Python only (architecture ready for TypeScript/JavaScript)
+- **Type Checking:** Basic type normalization; no deep generic/custom type analysis
+- **No Integration:** Does not integrate with mypy, pyright, or other type checkers
 
 The implementation plan can be found in [MVP.md](./docs/MVP.md).
-
-Sneak peek of the extension prototype in action:
-
-![Demo](./docs/day5.png)
-
-## Limitations
-
-- Python only supports Google and Sphinx docstring formats (not NumPy-style)
-- Basic type checking (doesn't handle complex generics or custom types)
-- TypeScript/JavaScript support not yet implemented (architecture ready)
-- Quick Fixes: Parameter fixes (DSV101-104) complete; Return and Exception fixes in progress
-- No integration with type checkers (mypy, pyright)
-- Sphinx editor not yet implemented (only Google editor available)
 
 ## Architecture
 
@@ -67,18 +78,14 @@ Simple high-level flow:
 
 **Key Features:**
 
-- **5 Return Validation Rules**: Type mismatch, Missing documentation, Void functions, Multiple returns, Generator yields
-- **4 Parameter Validation Rules**: Missing in code/docstring, Type mismatch, Optional mismatch
-- **2 Exception Validation Rules**: Missing documentation, Documented but not raised
-- **1 Side Effects Rule**: Detects undocumented I/O, print statements, global modifications
-- **Quick Fixes**: Automated fixes for parameter mismatches (DSV101-104) with surgical edits
-- **Docstring Styles**: Supports both Google-style and Sphinx-style docstrings
-- **Auto-detection**: Automatically detects Google vs Sphinx docstring style per file
-- **Surgical Docstring Editor**: GoogleDocstringEditor for precise, non-destructive edits
-- **Multi-language Ready**: Python (Google/Sphinx) implemented, TypeScript architecture ready
+- **11 Validation Rules**: 4 parameter, 5 return, 2 exception, 1 side effects
+- **Automated Parameter Fixes**: Quick Fixes for DSV101-104 with surgical docstring edits
+- **AI-Powered Descriptions**: GitHub Copilot integration for smart parameter descriptions
+- **Dual Docstring Support**: Google-style and Sphinx-style with auto-detection
+- **Real-time Feedback**: VS Code diagnostics, status bar indicator, and Problems panel integration
 - **Generator Support**: Detects yield statements and validates Yields vs Returns sections
-- **Diagnostic Codes**: DSV101-401 for filtering and identification
-- **Performance Optimized**: Caching, sampling, and async processing for fast analysis
+- **Performance Optimized**: Caching, debouncing, and async processing for fast analysis
+- **Extensible Architecture**: Multi-language ready (Python implemented, TypeScript architecture ready)
 
 For detailed architecture, see [Design.md](./docs/Design.md).
 
@@ -137,7 +144,8 @@ No configuration needed! The extension will:
 
 ### AI-Powered Descriptions
 
-When **Quick Fixes** add missing parameters, returns, or exceptions, the extension can use AI to generate smart descriptions instead of "TODO" placeholders.
+When **Quick Fixes** add missing parameters (DSV102), the extension can use AI to generate
+smart descriptions instead of "TODO" placeholders.
 
 **Requirements:**
 
@@ -150,6 +158,9 @@ When **Quick Fixes** add missing parameters, returns, or exceptions, the extensi
 2. AI generates description in the background (typically 1-3 seconds)
 3. "TODO" is automatically replaced with the AI-generated text
 4. Future requests for the same parameter reuse cached descriptions
+
+**Note:** AI descriptions are currently available only for parameter Quick Fixes.
+Return and exception documentation requires manual editing.
 
 ### Troubleshooting
 
