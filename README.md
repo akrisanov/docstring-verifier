@@ -42,38 +42,49 @@ The implementation plan can be found in [MVP.md](./docs/MVP.md).
 
 ## Architecture
 
-Simple high-level flow:
+High-level flow showing core components:
 
 ```text
 ┌──────────────┐
-│  VS Code     │  User edits Python/TypeScript file
+│  VS Code     │  User edits Python file
 │  Editor      │
 └──────┬───────┘
        │
        ▼
 ┌──────────────┐
 │  Language    │  Extract function signature + body
-│  Parser      │  (Python AST / TS Compiler API)
+│  Parser      │  (Python AST via subprocess)
 └──────┬───────┘
        │
        ▼
 ┌──────────────┐
 │  Docstring   │  Parse Args/Returns/Raises
-│  Parser      │  (Google/Sphinx/JSDoc)
+│  Parser      │  (Google/Sphinx auto-detection)
 └──────┬───────┘
        │
        ▼
 ┌──────────────┐
-│  Analyzers   │  Compare code facts vs docstring
-│              │  → Find mismatches
+│  Analyzers   │  Compare code vs docstring
+│              │  → Detect 11 types of issues
 └──────┬───────┘
        │
-       ├─────────────────┐
-       ▼                 ▼
-┌──────────────┐  ┌──────────────┐
-│ Diagnostics  │  │ Code Actions │
-│ (Red lines)  │  │ (Quick Fix)  │
-└──────────────┘  └──────────────┘
+       ├──────────────────────┐
+       ▼                      ▼
+┌──────────────┐      ┌──────────────────┐
+│ Diagnostics  │      │  Code Actions    │
+│              │      │  (Quick Fix)     │
+│ • Problems   │      │                  │
+│   panel      │      │ ┌──────────────┐ │
+│ • Squiggles  │      │ │ LLM Service  │ │
+│ • Status bar │      │ │ (AI gen)     │ │
+│   counter    │      │ └──────┬───────┘ │
+└──────────────┘      │        ▼         │
+                      │ ┌──────────────┐ │
+                      │ │  Docstring   │ │
+                      │ │  Editor      │ │
+                      │ │  (surgical)  │ │
+                      │ └──────────────┘ │
+                      └──────────────────┘
 ```
 
 **Key Features:**
