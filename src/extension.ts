@@ -8,6 +8,7 @@ import { FunctionDescriptor } from './parsers/types';
 import { EditorHandlerRegistry, createPythonEditorHandler } from './editors';
 import { ILLMService, GitHubCopilotLLMService } from './llm';
 import { ConfigurationHandler, DocumentEventHandler } from './extension/index';
+import { StatusBarManager } from './statusBar';
 
 // Global instances
 let logger: Logger;
@@ -16,6 +17,7 @@ let languageRegistry: LanguageHandlerRegistry;
 let editorRegistry: EditorHandlerRegistry;
 let llmService: ILLMService | undefined;
 let documentEventHandler: DocumentEventHandler;
+let statusBarManager: StatusBarManager;
 
 // Cache of parsed functions per document
 // Key: document URI, Value: array of FunctionDescriptor
@@ -88,6 +90,11 @@ export function activate(context: vscode.ExtensionContext) {
 		registerEnhanceDescriptionCommand(context, llmService, editorRegistry);
 		logger.info('Registered LLM enhancement command');
 	}
+
+	// Initialize status bar manager
+	statusBarManager = new StatusBarManager(diagnosticCollection);
+	context.subscriptions.push(statusBarManager);
+	logger.info('Initialized status bar manager');
 
 	// Create event handlers
 	documentEventHandler = new DocumentEventHandler({
@@ -237,6 +244,9 @@ async function analyzeDocument(document: vscode.TextDocument): Promise<void> {
 		} else {
 			logger.debug(`No issues found in ${document.fileName}`);
 		}
+
+		// Update status bar
+		statusBarManager?.update();
 
 	} catch (error) {
 		logger.error(`Error analyzing document: ${error}`);

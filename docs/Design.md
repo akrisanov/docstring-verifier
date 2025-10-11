@@ -1,28 +1,5 @@
 # System Design
 
-## Overview
-
-Docstring Verifier is a VS Code extension that validates consistency between function
-signatures and their docstrings. The extension uses a **multi-language architecture**
-that supports Python (implemented) with extensibility for TypeScript/JavaScript (planned).
-
-**Current Capabilities:**
-
-- ✅ Multi-language architecture with Language Handler Registry
-- ✅ Python support with Google and Sphinx docstring styles
-- ✅ Parameter validation (4 rules: DSV101-104)
-- ✅ Return type validation (5 rules: DSV201-205)
-- ✅ Exception validation (2 rules: DSV301-302)
-- ✅ Side effects detection (1 rule: DSV401)
-- ✅ Generator and async function support
-- ✅ Real-time diagnostics in VS Code Problems panel
-- ✅ Docstring Editor layer (GoogleDocstringEditor with surgical edits)
-- ✅ Editor Handler Registry (factory pattern for editor instances)
-- ✅ Code Actions / Quick Fixes for parameters (DSV101-104)
-- ✅ High code quality: 227 tests passing, 86% coverage
-- 🚧 Code Actions / Quick Fixes for returns and exceptions (in progress)
-- 🚧 TypeScript/JavaScript support (architecture ready, implementation pending)
-
 ## High-Level Architecture
 
 ```text
@@ -39,9 +16,15 @@ that supports Python (implemented) with extensibility for TypeScript/JavaScript 
            │                               │
            │  • Register diagnostic        │
            │    collection                 │
-           │  • Document listeners         │
-           │  • Initialize Language        │
-           │    Handler Registry           │
+           │  • Initialize registries:     │
+           │    - Language handlers        │
+           │    - Editor handlers          │
+           │  • Setup event handlers:      │
+           │    - DocumentEventHandler     │
+           │    - ConfigurationHandler     │
+           │  • Initialize LLM service     │
+           │  • Initialize StatusBar       │
+           │  • Register Code Actions      │
            └───────────────┬───────────────┘
                            │
                            │ Get handler for language
@@ -149,6 +132,8 @@ that supports Python (implemented) with extensibility for TypeScript/JavaScript 
            │  • Yellow/red squiggly lines  │
            │  • Problems panel             │
            │  • Hover tooltips             │
+           │  • Status bar indicator       │
+           │    (via StatusBarManager)     │
            └───────────────────────────────┘
 ```
 
@@ -328,7 +313,7 @@ Language Handler Registry pattern makes it easy to add new languages.
 
 **Trade-off:** More complex comparison logic
 
-### Why Information for DSV204?
+### DSV204 Severity Level
 
 **Decision:** Multiple return types as Information, not Warning
 
@@ -340,7 +325,7 @@ Language Handler Registry pattern makes it easy to add new languages.
 
 ---
 
-## Code Actions Layer (In Progress)
+## Code Actions Layer
 
 ### Architecture
 
@@ -351,9 +336,16 @@ Code Action Provider
   - Filter diagnostics by source
   - Route to appropriate fix provider
        ↓
-Fix Provider (Parameter/Return/Exception)
+Fix Provider (currently: ParameterFixProvider)
   - Get diagnostic context
   - Find function for diagnostic
+       ↓
+LLM Service (optional, if enabled)
+  - Generate parameter description
+  - Use GitHub Copilot Language Model API
+  - Cache results (LRU cache, 1000 items)
+  - Timeout: 5s (configurable)
+  - Fallback to "TODO" on failure
        ↓
 Editor Handler Registry
   - Get editor for language + style
@@ -377,18 +369,6 @@ Create WorkspaceEdit
 Updated docstring in file
 ```
 
-### Configuration
-
-- Auto-detection analyzes docstring patterns and caches results per document
-- Custom Python path takes precedence over bundled uv
-- Settings can be configured in VS Code user/workspace settings
-
-Future settings under consideration:
-
-- `docstringVerifier.disabledChecks` - Disable specific diagnostic rules (e.g., `["DSV204"]`)
-- `docstringVerifier.severity` - Override severity levels per rule
-- `docstringVerifier.excludePatterns` - Exclude files/folders from analysis
-
 ## Performance Considerations
 
 ### Optimization Strategies
@@ -410,10 +390,12 @@ Future settings under consideration:
 
 ### Unit Tests (TypeScript)
 
-- Covering all analyzers
+- Covering all analyzers (signature, return, exception, side effects)
 - Shared test utilities to eliminate duplication
 - Both positive and negative cases
 - Edge case coverage for type interactions
+- StatusBarManager tests
+- Editor and Code Actions tests
 
 ### Integration Tests (Python)
 
