@@ -109,7 +109,7 @@ suite('ParameterFixProvider - provideCodeActions Tests', () => {
 			assert.ok(action.command);
 			assert.strictEqual(action.command.command, 'docstring-verifier.applyQuickFix');
 			assert.ok(action.command.arguments);
-			assert.strictEqual(action.command.arguments.length, 2); // documentUri and edit
+			assert.strictEqual(action.command.arguments.length, 3); // documentUri, edit, and quickFixContext
 
 			// Workspace edit was created successfully - detailed content validation
 			// is covered by googleEditor tests
@@ -219,7 +219,7 @@ suite('ParameterFixProvider - provideCodeActions Tests', () => {
 			assert.ok(action.command);
 			assert.strictEqual(action.command.command, 'docstring-verifier.applyQuickFix');
 			assert.ok(action.command.arguments);
-			assert.strictEqual(action.command.arguments.length, 2); // documentUri and edit
+			assert.strictEqual(action.command.arguments.length, 3); // documentUri, edit, and quickFixContext
 		});
 
 		test('Should handle missing parameter name gracefully', async () => {

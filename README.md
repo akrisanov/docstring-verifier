@@ -109,6 +109,12 @@ The extension works out of the box with sensible defaults. All settings can be c
 
 ### Quick Start
 
+```bash
+corepack enable
+corepack prepare pnpm@latest --activate
+pnpm install
+```
+
 No configuration needed! The extension will:
 
 - Auto-detect your Python interpreter

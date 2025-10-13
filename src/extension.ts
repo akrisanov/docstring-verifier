@@ -82,7 +82,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Register Quick Fix application command
 	// This command applies the edit and saves the document to trigger re-analysis
-	registerApplyQuickFixCommand(context);
+	registerApplyQuickFixCommand(context, () => llmService);
 	logger.info('Registered apply Quick Fix command');
 
 	// Register LLM enhancement command if LLM service is available

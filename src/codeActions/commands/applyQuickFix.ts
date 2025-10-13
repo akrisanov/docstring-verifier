@@ -9,16 +9,39 @@
 
 import * as vscode from 'vscode';
 import { Logger } from '../../utils/logger';
+import { FunctionDescriptor, ParameterDescriptor } from '../../parsers/types';
+import { ILLMService } from '../../llm/base';
+
+/**
+ * Additional context for Quick Fix application.
+ */
+interface QuickFixContext {
+	/** Type of fix being applied */
+	type: 'add-parameter' | 'remove-parameter' | 'fix-type' | 'fix-optional';
+	/** If type is 'add-parameter', details about the parameter and function */
+	parameterDetails?: {
+		functionDescriptor: FunctionDescriptor;
+		parameterDescriptor: ParameterDescriptor;
+		docstringRange: vscode.Range;
+	};
+}
 
 /**
  * Register the apply Quick Fix command.
  */
-export function registerApplyQuickFixCommand(context: vscode.ExtensionContext): void {
+export function registerApplyQuickFixCommand(
+	context: vscode.ExtensionContext,
+	getLLMService: () => ILLMService | undefined
+): void {
 	const logger = new Logger('Docstring Verifier - Apply Quick Fix');
 
 	const command = vscode.commands.registerCommand(
 		'docstring-verifier.applyQuickFix',
-		async (documentUri: vscode.Uri, edit: vscode.WorkspaceEdit) => {
+		async (
+			documentUri: vscode.Uri,
+			edit: vscode.WorkspaceEdit,
+			quickFixContext?: QuickFixContext
+		) => {
 			try {
 				logger.debug(`Applying Quick Fix for: ${documentUri.fsPath}`);
 
@@ -42,6 +65,30 @@ export function registerApplyQuickFixCommand(context: vscode.ExtensionContext): 
 				await document.save();
 
 				logger.debug('Document saved, re-analysis triggered');
+
+				// If this was an "add parameter" fix and LLM service is available,
+				// trigger AI enhancement to replace the TODO placeholder
+				if (quickFixContext?.type === 'add-parameter' && quickFixContext.parameterDetails) {
+					const llmService = getLLMService();
+					if (llmService) {
+						logger.debug('Triggering LLM enhancement for added parameter');
+
+						// Small delay to ensure document is saved and updated
+						setTimeout(async () => {
+							try {
+								await vscode.commands.executeCommand(
+									'docstring-verifier.enhanceParameterDescription',
+									documentUri,
+									quickFixContext.parameterDetails!.functionDescriptor,
+									quickFixContext.parameterDetails!.parameterDescriptor,
+									quickFixContext.parameterDetails!.docstringRange
+								);
+							} catch (error) {
+								logger.warn(`Failed to trigger LLM enhancement: ${error}`);
+							}
+						}, 500); // 500ms delay
+					}
+				}
 
 			} catch (error) {
 				logger.error(`Error applying Quick Fix: ${error}`);

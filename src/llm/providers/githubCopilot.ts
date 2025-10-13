@@ -60,6 +60,13 @@ export class GitHubCopilotLLMService implements ILLMService {
 		this.cache = new LRUCache(cacheSize);
 		this.timeout = timeout;
 		this.logger.info(`GitHub Copilot LLM service initialized (cache size: ${cacheSize})`);
+
+		// Check availability at startup
+		this.isAvailable().then(available => {
+			this.logger.info(`GitHub Copilot availability: ${available}`);
+		}).catch(error => {
+			this.logger.warn(`Error checking Copilot availability: ${error}`);
+		});
 	}
 
 	/**
@@ -156,15 +163,22 @@ export class GitHubCopilotLLMService implements ILLMService {
 			}
 
 			// Check if Copilot models are available
-			const models = await vscode.lm.selectChatModels({
-				vendor: 'copilot',
-				family: 'gpt-4o'
+			// Try with just vendor first, then with family if needed
+			let models = await vscode.lm.selectChatModels({
+				vendor: 'copilot'
 			});
+
+			this.logger.debug(`Found ${models.length} Copilot models with vendor selector`);
 
 			if (models.length === 0) {
 				this.logger.debug('No GitHub Copilot models available');
 				return false;
 			}
+
+			// Log available models for debugging
+			models.forEach(model => {
+				this.logger.debug(`Available model: ${model.id} (${model.name}) - family: ${model.family}, vendor: ${model.vendor}`);
+			});
 
 			return true;
 
@@ -225,28 +239,41 @@ export class GitHubCopilotLLMService implements ILLMService {
 		cancellationToken: vscode.CancellationToken
 	): Promise<string | null> {
 		try {
-			// Select Copilot model
-			const models = await vscode.lm.selectChatModels({
-				vendor: 'copilot',
-				family: 'gpt-4o'
+			// Select Copilot model - try with vendor only first, then specific family
+			let models = await vscode.lm.selectChatModels({
+				vendor: 'copilot'
 			});
 
+			// If no models with vendor only, try with specific family
 			if (models.length === 0) {
+				models = await vscode.lm.selectChatModels({
+					vendor: 'copilot',
+					family: 'gpt-4o'
+				});
+			}
+
+			// Still no models? Try without family specification
+			if (models.length === 0) {
+				this.logger.warn('No GitHub Copilot models found');
 				return null;
 			}
 
 			const model = models[0];
+			this.logger.debug(`Using model: ${model.id} (${model.name}) - family: ${model.family}`);
 
 			// Build prompt
 			const userPrompt = this.buildPrompt(context);
 
 			// Send chat request with cancellation token
+			// Combine system prompt with user prompt since there's no dedicated System role
+			const combinedPrompt = `${SYSTEM_PROMPT}\n\n${userPrompt}`;
 			const messages = [
-				vscode.LanguageModelChatMessage.User(SYSTEM_PROMPT),
-				vscode.LanguageModelChatMessage.User(userPrompt)
+				vscode.LanguageModelChatMessage.User(combinedPrompt)
 			];
 
-			const response = await model.sendRequest(messages, {}, cancellationToken);
+			const response = await model.sendRequest(messages, {
+				justification: 'Generate parameter description for docstring completion'
+			}, cancellationToken);
 
 			// Collect response text
 			let fullText = '';
@@ -261,6 +288,25 @@ export class GitHubCopilotLLMService implements ILLMService {
 			// Check if error is due to cancellation
 			if (error instanceof vscode.CancellationError) {
 				this.logger.debug('Copilot API call was cancelled (timeout)');
+				return null;
+			}
+
+			// Handle specific LanguageModelError cases
+			if (error instanceof vscode.LanguageModelError) {
+				this.logger.error(`Copilot Language Model Error: ${error.message} (code: ${error.code})`);
+				if (error.cause) {
+					this.logger.error(`Cause: ${error.cause}`);
+				}
+
+				// Log specific error type for debugging
+				if (error.code === 'NoPermissions') {
+					this.logger.warn('GitHub Copilot permissions not granted - user needs to consent');
+				} else if (error.code === 'NotFound') {
+					this.logger.warn('GitHub Copilot model not found');
+				} else if (error.code === 'Blocked') {
+					this.logger.warn('GitHub Copilot request blocked (quota/policy limits)');
+				}
+
 				return null;
 			}
 
@@ -369,16 +415,5 @@ export class GitHubCopilotLLMService implements ILLMService {
 		// Cache by function name, parameter name, and type
 		// This allows reuse across similar functions
 		return `${context.functionName}:${context.paramName}:${context.paramType || 'Any'}`;
-	}
-
-	/**
-	 * Create a promise that rejects after timeout.
-	 *
-	 * @returns Promise that resolves to null after timeout
-	 */
-	private createTimeoutPromise(): Promise<null> {
-		return new Promise((resolve) => {
-			setTimeout(() => resolve(null), this.timeout);
-		});
 	}
 }

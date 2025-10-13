@@ -132,10 +132,20 @@ export class ParameterFixProvider implements ICodeActionProvider {
 		edit.replace(context.document.uri, docstringRange, updatedDocstring);
 
 		// Use command to apply edit and trigger save (which triggers re-analysis)
+		// Also provide context for LLM enhancement
+		const quickFixContext = {
+			type: 'add-parameter' as const,
+			parameterDetails: {
+				functionDescriptor: context.function,
+				parameterDescriptor: param,
+				docstringRange: docstringRange,
+			}
+		};
+
 		action.command = {
 			command: 'docstring-verifier.applyQuickFix',
 			title: 'Apply Quick Fix',
-			arguments: [context.document.uri, edit]
+			arguments: [context.document.uri, edit, quickFixContext]
 		};
 
 		this.logger.info(`Created "Add parameter '${paramName}'" action`);
