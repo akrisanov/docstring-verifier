@@ -4,6 +4,8 @@
 [![CodeQL](https://github.com/akrisanov/docstring-verifier/actions/workflows/codeql.yml/badge.svg)](https://github.com/akrisanov/docstring-verifier/actions/workflows/codeql.yml)
 [![codecov](https://codecov.io/gh/akrisanov/docstring-verifier/branch/main/graph/badge.svg)](https://codecov.io/gh/akrisanov/docstring-verifier)
 
+📺 [Introduction Video](https://youtu.be/xhVL_mEYCmI)
+
 ## Project Goal
 
 Build a VS Code extension that detects discrepancies between docstrings and actual code implementations,
