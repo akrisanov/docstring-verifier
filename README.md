@@ -6,6 +6,8 @@
 
 📺 [Introduction Video](https://youtu.be/xhVL_mEYCmI)
 
+![Introduction Video](docs/docstring-verifier.mp4)
+
 ## Project Goal
 
 Build a VS Code extension that detects discrepancies between docstrings and actual code implementations,
