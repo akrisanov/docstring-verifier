@@ -4,9 +4,7 @@
 [![CodeQL](https://github.com/akrisanov/docstring-verifier/actions/workflows/codeql.yml/badge.svg)](https://github.com/akrisanov/docstring-verifier/actions/workflows/codeql.yml)
 [![codecov](https://codecov.io/gh/akrisanov/docstring-verifier/branch/main/graph/badge.svg)](https://codecov.io/gh/akrisanov/docstring-verifier)
 
-📺 [Introduction Video](https://youtu.be/xhVL_mEYCmI)
-
-![Introduction Video](docs/docstring-verifier.mp4)
+[![Demo video](https://img.youtube.com/vi/xhVL_mEYCmI/0.jpg)](https://youtu.be/xhVL_mEYCmI)
 
 ## Project Goal
 
